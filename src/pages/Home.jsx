@@ -61,8 +61,8 @@ export default function Home(){
   return (
     <section className="space-y-12">
       {/* Hero */}
-      <div className="grid lg:grid-cols-2 gap-10 items-center">
-        <div>
+  <div className="grid lg:grid-cols-2 gap-10 items-center">
+  <div>
           <h2 className="text-4xl font-extrabold accent-heading">PixelPact — where teams create together</h2>
           <p className="mt-4 text-slate-700 max-w-xl">A modern collaborative whiteboard with realtime sync, beautiful templates, extensible tools, and enterprise-grade controls. <span className="emoji">✨</span></p>
 
@@ -75,7 +75,7 @@ export default function Home(){
 
           <div className="mt-8 flex gap-4 items-center justify-start">
             <button className="relative px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room 🚀
-              <span className="absolute -right-3 -top-2 w-3 h-3 rounded-full bg-[#ff6b6b] animate-pulse" />
+              <span className="absolute -right-3 -top-2 w-3 h-3 rounded-full bg-[#ff6b6b] animate-pulse" aria-hidden="true" />
             </button>
             <a href="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Watch demo</a>
           </div>
@@ -83,15 +83,15 @@ export default function Home(){
           <div className="mt-6 text-sm text-slate-500">Used by teams at startups and enterprises for fast ideation and polished presentations.</div>
         </div>
 
-        <div>
+        <div className="w-full">
           <div className="glass p-4">
-            <div className="h-80 bg-white rounded-lg flex flex-col p-4">
+            <div className="min-h-[18rem] sm:min-h-[20rem] bg-white rounded-lg flex flex-col p-4 overflow-hidden">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold">Canvas • Room #123</div>
                 <div className="text-xs text-slate-400">Live • 5 participants</div>
               </div>
-              <div className="flex-1 rounded-md bg-gradient-to-br from-[#fff] to-[#f7fbff] border border-slate-100 flex items-center justify-center text-slate-400">
-                <div className="w-full h-full" ref={(el)=>{ /* placeholder for mount */ }}>
+              <div className="flex-1 rounded-md bg-gradient-to-br from-[#fff] to-[#f7fbff] border border-slate-100 flex items-center justify-center text-slate-400 overflow-hidden">
+                <div className="w-full h-full max-h-full" ref={(el)=>{ /* placeholder for mount */ }}>
                   <Suspense fallback={<HeroPlaceholder/>}>
                       <LottiePlayer animationData={miniAnim} style={{width: '100%', height: '100%'}} />
                     </Suspense>
