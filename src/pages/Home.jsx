@@ -9,6 +9,7 @@ import useInView from '../hooks/useInView'
 import useStaggeredInView from '../hooks/useStaggeredInView'
 const LottiePlayer = lazy(()=> import('../components/LottiePlayer'))
 import miniAnim from '../assets/lottie/mini.json'
+import { Link } from 'react-router-dom'
 
 const rotating = [
   'Sketch together ✏️',
@@ -77,7 +78,7 @@ export default function Home(){
             <button className="relative px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room 🚀
               <span className="absolute -right-3 -top-2 w-3 h-3 rounded-full bg-[#ff6b6b] animate-pulse" aria-hidden="true" />
             </button>
-            <a href="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Watch demo</a>
+            <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Watch demo</Link>
           </div>
 
           <div className="mt-6 text-sm text-slate-500">Used by teams at startups and enterprises for fast ideation and polished presentations.</div>
@@ -168,7 +169,7 @@ export default function Home(){
         <p className="text-slate-600 mt-2">Start a room in seconds — invite teammates, or try a demo session.</p>
         <div className="mt-6 flex items-center justify-center gap-4">
           <button className="px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room</button>
-          <a href="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Launch demo</a>
+          <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Launch demo</Link>
         </div>
       </div>
     </section>

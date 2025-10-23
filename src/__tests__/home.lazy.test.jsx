@@ -18,6 +18,7 @@ if (typeof global.IntersectionObserver === 'undefined'){
 }
 
 import { render, within, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { test, expect } from 'vitest'
 
 import Home from '../pages/Home'
@@ -25,7 +26,12 @@ import Home from '../pages/Home'
 test('placeholders present and illustrations load', async () => {
   const container = document.createElement('div')
   document.body.appendChild(container)
-  const { container: rendered } = render(<Home />, { container })
+  const { container: rendered } = render(
+    <MemoryRouter>
+      <Home />
+    </MemoryRouter>,
+    { container }
+  )
   const withinRoot = within(rendered)
 
     const hero = withinRoot.getByTestId('hero-placeholder')

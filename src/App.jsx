@@ -1,13 +1,18 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
-import Home from './pages/Home'
-import About from './pages/About'
-import Pricing from './pages/Pricing'
-import Demo from './pages/Demo'
-import Privacy from './pages/Privacy'
-import Terms from './pages/Terms'
+
+const Home = lazy(()=> import('./pages/Home'))
+const About = lazy(()=> import('./pages/About'))
+const Pricing = lazy(()=> import('./pages/Pricing'))
+const Demo = lazy(()=> import('./pages/Demo'))
+const Privacy = lazy(()=> import('./pages/Privacy'))
+const Terms = lazy(()=> import('./pages/Terms'))
+
+function Loader(){
+  return <div className="text-center py-12">Loading…</div>
+}
 
 export default function App() {
   return (
@@ -15,14 +20,16 @@ export default function App() {
       <div className="min-h-screen text-slate-900">
         <Nav />
         <main className="max-w-7xl mx-auto px-6 py-12">
-          <Routes>
-            <Route path="/" element={<Home/>} />
-            <Route path="/about" element={<About/>} />
-            <Route path="/pricing" element={<Pricing/>} />
-            <Route path="/demo" element={<Demo/>} />
-            <Route path="/privacy" element={<Privacy/>} />
-            <Route path="/terms" element={<Terms/>} />
-          </Routes>
+          <Suspense fallback={<Loader/>}>
+            <Routes>
+              <Route path="/" element={<Home/>} />
+              <Route path="/about" element={<About/>} />
+              <Route path="/pricing" element={<Pricing/>} />
+              <Route path="/demo" element={<Demo/>} />
+              <Route path="/privacy" element={<Privacy/>} />
+              <Route path="/terms" element={<Terms/>} />
+            </Routes>
+          </Suspense>
         </main>
         <Footer />
       </div>
