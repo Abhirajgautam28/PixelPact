@@ -7,6 +7,8 @@ import TemplatesPlaceholder from '../components/illustrations/placeholders/Templ
 import IntegrationsPlaceholder from '../components/illustrations/placeholders/IntegrationsPlaceholder'
 import useInView from '../hooks/useInView'
 import useStaggeredInView from '../hooks/useStaggeredInView'
+const LottiePlayer = lazy(()=> import('../components/LottiePlayer'))
+import miniAnim from '../assets/lottie/mini.json'
 
 const rotating = [
   'Sketch together ✏️',
@@ -91,8 +93,8 @@ export default function Home(){
               <div className="flex-1 rounded-md bg-gradient-to-br from-[#fff] to-[#f7fbff] border border-slate-100 flex items-center justify-center text-slate-400">
                 <div className="w-full h-full" ref={(el)=>{ /* placeholder for mount */ }}>
                   <Suspense fallback={<HeroPlaceholder/>}>
-                    <HeroIllustration />
-                  </Suspense>
+                      <LottiePlayer animationData={miniAnim} style={{width: '100%', height: '100%'}} />
+                    </Suspense>
                 </div>
               </div>
             </div>
