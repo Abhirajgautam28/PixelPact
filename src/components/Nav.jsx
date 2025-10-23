@@ -1,8 +1,11 @@
-import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import React, { useContext } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { AuthContext } from '../contexts/AuthContext'
 
 export default function Nav() {
   const loc = useLocation()
+  const { user } = useContext(AuthContext)
+  const nav = useNavigate()
   return (
     <header className="border-b glass">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -17,7 +20,7 @@ export default function Nav() {
           <Link className={`text-sm ${loc.pathname==='/about'? 'font-semibold text-[#6C5CE7]':'text-slate-700'} transition`} to="/about">About</Link>
           <Link className={`text-sm ${loc.pathname==='/pricing'? 'font-semibold text-[#6C5CE7]':'text-slate-700'} transition`} to="/pricing">Pricing</Link>
           <Link className={`text-sm ${loc.pathname==='/demo'? 'font-semibold text-[#6C5CE7]':'text-slate-700'} transition`} to="/demo">Demo</Link>
-          <Link to="/demo" className="ml-4 px-4 py-2 rounded-md bg-[#6C5CE7] text-white">Try it 🚀</Link>
+          <button onClick={()=> user ? nav('/board/new') : nav('/register')} className="ml-4 px-4 py-2 rounded-md bg-[#6C5CE7] text-white">Try it 🚀</button>
         </nav>
       </div>
     </header>
