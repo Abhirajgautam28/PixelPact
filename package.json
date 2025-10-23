@@ -8,8 +8,8 @@
 		"svgr": "svgr src/assets/svgs -d src/components/illustrations/generated --icon --ext .jsx",
 		"build": "npm run svgr && vite build",
 		"preview": "vite preview",
-		"test": "vitest",
-		"test:watch": "vitest --watch",
+		"test": "vitest src/__tests__ --run",
+		"test:watch": "vitest src/__tests__ --watch",
 		"playwright:install": "npx playwright install --with-deps",
 		"e2e": "playwright test",
 		"e2e:run": "playwright test --headed",
@@ -18,9 +18,8 @@
 	"vitest": {
 		"environment": "jsdom",
 		"globals": true,
-		"setupFiles": [
-			"src/setupTests.js"
-		]
+		"setupFiles": ["src/setupTests.js"],
+		"include": ["src/__tests__/**"]
 	},
 	"dependencies": {
 		"lottie-web": "^5.13.0",

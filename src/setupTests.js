@@ -22,31 +22,39 @@ if (typeof global.IntersectionObserver === 'undefined') {
 }
 
 // Mock canvas methods used by Demo canvas in jsdom environment
-if (typeof HTMLCanvasElement !== 'undefined') {
-	if (typeof HTMLCanvasElement.prototype.getContext === 'undefined') {
-		HTMLCanvasElement.prototype.getContext = function () {
-			// Return a minimal 2D context mock
-			return {
-				scale: () => {},
-				beginPath: () => {},
-				moveTo: () => {},
-				lineTo: () => {},
-				stroke: () => {},
-				clearRect: () => {},
-				fillRect: () => {},
-				strokeStyle: '#000',
-				lineWidth: 1,
-				lineCap: 'round',
-				lineJoin: 'round',
+// Attach mocks to the JSDOM window's HTMLCanvasElement when available
+const CanvasCtor = global.window && global.window.HTMLCanvasElement ? global.window.HTMLCanvasElement : null
+if (CanvasCtor) {
+	// expose on global for any code that expects it
+	global.HTMLCanvasElement = CanvasCtor
+	const proto = CanvasCtor.prototype
+	const originalGetContext = proto.getContext
+	proto.getContext = function (type) {
+		try {
+			if (typeof originalGetContext === 'function') {
+				const res = originalGetContext.call(this, type)
+				if (res) return res
 			}
+		} catch (e) {
+			// ignore and return mock
+		}
+		return {
+			scale: () => {},
+			beginPath: () => {},
+			moveTo: () => {},
+			lineTo: () => {},
+			stroke: () => {},
+			clearRect: () => {},
+			fillRect: () => {},
+			strokeStyle: '#000',
+			lineWidth: 1,
+			lineCap: 'round',
+			lineJoin: 'round',
 		}
 	}
 
-	// Provide a sensible getBoundingClientRect used by Demo canvas resize logic
-	if (typeof HTMLCanvasElement.prototype.getBoundingClientRect === 'undefined') {
-		HTMLCanvasElement.prototype.getBoundingClientRect = function () {
-			return { width: 600, height: 360, left: 0, top: 0 }
-		}
+	proto.getBoundingClientRect = proto.getBoundingClientRect || function () {
+		return { width: 600, height: 360, left: 0, top: 0 }
 	}
 }
 

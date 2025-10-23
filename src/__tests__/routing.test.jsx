@@ -33,6 +33,24 @@ if (typeof global.IntersectionObserver === 'undefined') {
   }
 }
 
+// Additional defensive mocks attached at test-time to ensure canvas doesn't throw
+try {
+  if (global.window && global.window.HTMLCanvasElement) {
+    const proto = global.window.HTMLCanvasElement.prototype
+    proto.getContext = proto.getContext || function () {
+      return {
+        scale: () => {}, beginPath: () => {}, moveTo: () => {}, lineTo: () => {}, stroke: () => {}, clearRect: () => {},
+      }
+    }
+    proto.getBoundingClientRect = proto.getBoundingClientRect || function () { return { width: 600, height: 360, left: 0, top: 0 } }
+  }
+  if (typeof global.lottie === 'undefined') {
+    global.lottie = { loadAnimation: () => ({ destroy: () => {} }) }
+  }
+} catch (e) {
+  // swallow any errors - tests will still proceed
+}
+
 test('navigation via header links loads appropriate pages', async ()=>{
   const { container } = render(
     <MemoryRouter initialEntries={['/']}>
