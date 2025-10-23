@@ -6,6 +6,7 @@ import HeroPlaceholder from '../components/illustrations/placeholders/HeroPlaceh
 import TemplatesPlaceholder from '../components/illustrations/placeholders/TemplatesPlaceholder'
 import IntegrationsPlaceholder from '../components/illustrations/placeholders/IntegrationsPlaceholder'
 import useInView from '../hooks/useInView'
+import useStaggeredInView from '../hooks/useStaggeredInView'
 
 const rotating = [
   'Sketch together ✏️',
@@ -13,10 +14,9 @@ const rotating = [
   'Share & iterate 🔁',
   'Present beautifully 🎨'
 ]
-
-function FeatureCard({title, desc, icon}){
+function FeatureCard({title, desc, icon, delayClass}){
   return (
-    <div className="p-6 glass">
+    <div className={`p-6 glass transform ${delayClass}`}>
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-md flex items-center justify-center bg-gradient-to-br from-[#ffd6e0] to-[#e7f5ff]">{icon}</div>
         <div>
@@ -45,6 +45,16 @@ export default function Home(){
   },[])
   const [templatesRef, templatesInView] = useInView({threshold:0.15})
   const [integrationsRef, integrationsInView] = useInView({threshold:0.2})
+  const [featuresRef, featuresInView, getDelayClass] = useStaggeredInView({threshold:0.12})
+
+  const features = [
+    {title: 'Real-time collaboration', desc: 'Low-latency sync, live cursors, and voice chat integration.', icon: '🎯'},
+    {title: 'Rich drawing & shapes', desc: 'Vector tools, pixel brushes, text, and alignment guides.', icon: '✏️'},
+    {title: 'Templates & components', desc: 'Prebuilt templates for workshops, retros, and design systems.', icon: '📚'},
+    {title: 'Version history', desc: 'Track changes, restore snapshots, and export states.', icon: '⏲️'},
+    {title: 'Permissions & SSO', desc: 'Granular access controls and single sign-on for teams.', icon: '🔐'},
+    {title: 'Integrations', desc: 'Embed Figma, FigJam files, Slack notifications, and more.', icon: '🔗'},
+  ]
 
   return (
     <section className="space-y-12">
@@ -91,13 +101,10 @@ export default function Home(){
       {/* Expanded features */}
       <div>
         <h3 className="text-2xl font-semibold">Key features</h3>
-        <div className="mt-6 grid md:grid-cols-3 gap-6">
-          <FeatureCard title="Real-time collaboration" desc="Low-latency sync, live cursors, and voice chat integration." icon={'🎯'} />
-          <FeatureCard title="Rich drawing & shapes" desc="Vector tools, pixel brushes, text, and alignment guides." icon={'✏️'} />
-          <FeatureCard title="Templates & components" desc="Prebuilt templates for workshops, retros, and design systems." icon={'📚'} />
-          <FeatureCard title="Version history" desc="Track changes, restore snapshots, and export states." icon={'🕒'} />
-          <FeatureCard title="Permissions & SSO" desc="Granular access controls and single sign-on for teams." icon={'🔐'} />
-          <FeatureCard title="Integrations" desc="Embed Figma, FigJam files, Slack notifications, and more." icon={'🔗'} />
+        <div className="mt-6 grid md:grid-cols-3 gap-6" ref={featuresRef}>
+          {features.map((f, i)=> (
+            <FeatureCard key={f.title} title={f.title} desc={f.desc} icon={f.icon} delayClass={getDelayClass(i)} />
+          ))}
         </div>
       </div>
 

@@ -28,11 +28,25 @@ test('placeholders present and illustrations load', async () => {
   const { container: rendered } = render(<Home />, { container })
   const withinRoot = within(rendered)
 
-    expect(withinRoot.getByTestId('hero-placeholder')).toBeTruthy()
-    expect(withinRoot.getByTestId('templates-placeholder')).toBeTruthy()
-    expect(withinRoot.getByTestId('integrations-placeholder')).toBeTruthy()
+    const hero = withinRoot.getByTestId('hero-placeholder')
+    const tpl = withinRoot.getByTestId('templates-placeholder')
+    const integ = withinRoot.getByTestId('integrations-placeholder')
 
-  await waitFor(()=>{
-     expect(withinRoot.getByTestId('hero-placeholder')).toBeTruthy()
-  })
+    expect(hero).toBeTruthy()
+    expect(tpl).toBeTruthy()
+    expect(integ).toBeTruthy()
+
+    // placeholders should contain lazy-loading img tags
+    expect(hero.querySelector('img')?.getAttribute('loading')).toBe('lazy')
+    expect(tpl.querySelector('img')?.getAttribute('loading')).toBe('lazy')
+    expect(integ.querySelector('img')?.getAttribute('loading')).toBe('lazy')
+
+    // feature cards should receive animation classes once in view
+    await waitFor(()=>{
+      const cards = rendered.querySelectorAll('.glass.transform')
+      expect(cards.length).toBeGreaterThanOrEqual(3)
+      // at least first card should have been transitioned to opacity-100 (string match) once in view
+      const first = cards[0]
+      expect(first.className.includes('opacity-100') || first.className.includes('translate-y-0')).toBeTruthy()
+    })
 })
