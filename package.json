@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "svgr": "svgr src/assets/svgs -d src/components/illustrations/generated --icon",
+    "build": "npm run svgr && vite build",
     "preview": "vite preview",
     "test": "vitest"
   },

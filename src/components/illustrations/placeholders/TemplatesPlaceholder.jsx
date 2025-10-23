@@ -1,11 +1,14 @@
 import React from 'react'
+import tplPng from '../../../assets/images/placeholders/templates.png'
+import tplWebp from '../../../assets/images/placeholders/templates.webp'
 
 export default function TemplatesPlaceholder(){
   return (
-    <svg data-testid="templates-placeholder" viewBox="0 0 200 60" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" rx="6" fill="#f8fafc" />
-      <rect x="8" y="8" width="56" height="40" rx="6" fill="#eef2ff" />
-      <rect x="72" y="8" width="56" height="40" rx="6" fill="#e6fffa" />
-    </svg>
+      <div className="w-full h-full flex items-center justify-center bg-white">
+        <picture data-testid="templates-placeholder">
+          <source srcSet={tplWebp} type="image/webp" />
+          <img src={tplPng} alt="templates placeholder" loading="lazy" width="420" height="280" />
+        </picture>
+      </div>
   )
 }
