@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background: linear-gradient(180deg, #FFFBFF 0%, #F6FBFF 100%);
+  color: #0f172a;
+}
+
+/* colorful headings */
+.accent-heading { font-family: 'Playfair Display', Georgia, serif; color: #6C5CE7 }
+
+/* subtle card */
+.glass {
+  background: rgba(255,255,255,0.8);
+  box-shadow: 0 6px 20px rgba(16,24,40,0.08);
+  border-radius: 12px;
+}
+
+.emoji { font-family: 'Inter', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; }
+
