@@ -8,7 +8,10 @@
 		"svgr": "svgr src/assets/svgs -d src/components/illustrations/generated --icon --ext .jsx",
 		"build": "npm run svgr && vite build",
 		"preview": "vite preview",
-		"test": "vitest"
+		"test": "vitest",
+		"test:watch": "vitest --watch",
+		"playwright:install": "npx playwright install",
+		"e2e": "playwright test"
 	},
 	"vitest": {
 		"environment": "jsdom",
