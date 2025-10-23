@@ -2,6 +2,10 @@ import React, {useState, useEffect, Suspense, lazy} from 'react'
 const HeroIllustration = lazy(()=> import('../components/illustrations/HeroIllustration'))
 const TemplatesIllustration = lazy(()=> import('../components/illustrations/TemplatesIllustration'))
 const IntegrationsIllustration = lazy(()=> import('../components/illustrations/IntegrationsIllustration'))
+import HeroPlaceholder from '../components/illustrations/placeholders/HeroPlaceholder'
+import TemplatesPlaceholder from '../components/illustrations/placeholders/TemplatesPlaceholder'
+import IntegrationsPlaceholder from '../components/illustrations/placeholders/IntegrationsPlaceholder'
+import useInView from '../hooks/useInView'
 
 const rotating = [
   'Sketch together ✏️',
@@ -39,6 +43,8 @@ export default function Home(){
     const t = setInterval(()=> setIdx(i=> (i+1)%rotating.length), 2200)
     return ()=> clearInterval(t)
   },[])
+  const [templatesRef, templatesInView] = useInView({threshold:0.15})
+  const [integrationsRef, integrationsInView] = useInView({threshold:0.2})
 
   return (
     <section className="space-y-12">
@@ -71,8 +77,8 @@ export default function Home(){
                 <div className="text-xs text-slate-400">Live • 5 participants</div>
               </div>
               <div className="flex-1 rounded-md bg-gradient-to-br from-[#fff] to-[#f7fbff] border border-slate-100 flex items-center justify-center text-slate-400">
-                <div className="w-full h-full animate-fade-in-up">
-                  <Suspense fallback={<div className="w-full h-full bg-slate-100 animate-pulse"/>}>
+                <div className="w-full h-full" ref={(el)=>{ /* placeholder for mount */ }}>
+                  <Suspense fallback={<HeroPlaceholder/>}>
                     <HeroIllustration />
                   </Suspense>
                 </div>
@@ -100,9 +106,9 @@ export default function Home(){
         <h3 className="text-2xl font-semibold">Templates gallery</h3>
         <p className="text-slate-600 mt-2">Kickstart sessions with curated templates for design, strategy, and planning.</p>
         <div className="mt-6 grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="glass p-4 flex items-center justify-center">
-            <div className="w-full h-28 animate-fade-in-left">
-              <Suspense fallback={<div className="w-full h-full bg-slate-100 animate-pulse"/>}>
+          <div className="glass p-4 flex items-center justify-center" ref={templatesRef}>
+            <div className={`w-full h-28 ${templatesInView? 'animate-fade-in-left':''}`}>
+              <Suspense fallback={<TemplatesPlaceholder/>}>
                 <TemplatesIllustration />
               </Suspense>
             </div>
@@ -120,9 +126,9 @@ export default function Home(){
         <h3 className="text-2xl font-semibold">Integrations</h3>
         <p className="text-slate-600 mt-2">Connect PixelPact with your workflow.</p>
         <div className="mt-4 flex flex-wrap gap-4 items-center">
-          <div className="p-3 glass flex items-center">
-            <div className="w-40 h-14 animate-fade-in">
-              <Suspense fallback={<div className="w-full h-full bg-slate-100 animate-pulse"/>}>
+          <div className="p-3 glass flex items-center" ref={integrationsRef}>
+            <div className={`w-40 h-14 ${integrationsInView? 'animate-fade-in':''}`}>
+              <Suspense fallback={<IntegrationsPlaceholder/>}>
                 <IntegrationsIllustration />
               </Suspense>
             </div>
