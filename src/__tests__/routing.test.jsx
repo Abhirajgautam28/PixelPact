@@ -16,11 +16,12 @@ if (typeof document === 'undefined'){
 
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import Nav from '../components/Nav'
-// Use lightweight stubs in this integration test to avoid importing heavy page assets
-const Home = ()=> (<section><h2 className="text-2xl font-semibold">Home</h2></section>)
-const About = ()=> (<section><h2 className="text-2xl font-semibold">About PixelPact</h2></section>)
-const Pricing = ()=> (<section><h2 className="text-2xl font-semibold">Pricing</h2></section>)
-const Demo = ()=> (<section><h2 className="text-2xl font-semibold">Demo</h2></section>)
+// Import real pages so the integration test exercises actual app behavior.
+// Heavy runtime pieces (canvas, lottie) are safely stubbed in src/setupTests.js
+import Home from '../pages/Home'
+import About from '../pages/About'
+import Pricing from '../pages/Pricing'
+import Demo from '../pages/Demo'
 
 // Ensure IntersectionObserver exists in test environment (same as setupTests.js)
 if (typeof global.IntersectionObserver === 'undefined') {
