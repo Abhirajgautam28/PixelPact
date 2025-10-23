@@ -28,11 +28,11 @@ test('placeholders present and illustrations load', async () => {
   const { container: rendered } = render(<Home />, { container })
   const withinRoot = within(rendered)
 
-  expect(withinRoot.getByTestId('hero-placeholder')).toBeInTheDocument()
-  expect(withinRoot.getByTestId('templates-placeholder')).toBeInTheDocument()
-  expect(withinRoot.getByTestId('integrations-placeholder')).toBeInTheDocument()
+    expect(withinRoot.getByTestId('hero-placeholder')).toBeTruthy()
+    expect(withinRoot.getByTestId('templates-placeholder')).toBeTruthy()
+    expect(withinRoot.getByTestId('integrations-placeholder')).toBeTruthy()
 
   await waitFor(()=>{
-    expect(withinRoot.getByTestId('hero-placeholder')).toBeInTheDocument()
+     expect(withinRoot.getByTestId('hero-placeholder')).toBeTruthy()
   })
 })
