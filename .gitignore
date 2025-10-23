@@ -2,3 +2,7 @@ node_modules/
 dist/
 .env
 .DS_Store
+playwright/test-results/about-1761241401678.png
+playwright/test-results/demo-1761241401911.png
+playwright/test-results/home-1761241400689.png
+playwright/test-results/pricing-1761241401814.png
