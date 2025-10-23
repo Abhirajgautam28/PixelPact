@@ -19,5 +19,12 @@ html, body, #root {
   border-radius: 12px;
 }
 
+/* ensure glass cards don't let children overflow and use border-box sizing */
+.glass {
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
+}
+
 .emoji { font-family: 'Inter', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; }
 
