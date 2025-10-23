@@ -33,4 +33,8 @@ module.exports = {
     }
   },
   plugins: [],
+  safelist: [
+    // common delay steps used by the stagger logic
+    'delay-75', 'delay-100', 'delay-150', 'delay-200', 'delay-300', 'delay-400', 'delay-500', 'delay-700', 'delay-900'
+  ],
 }

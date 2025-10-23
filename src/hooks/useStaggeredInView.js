@@ -17,11 +17,13 @@ export default function useStaggeredInView(options = {}){
     return ()=> obs.disconnect()
   }, [ref.current])
 
-  function getDelayClass(i){
-    if (!inView) return 'opacity-0 translate-y-4'
+  // returns an object with className and style for inline transitionDelay
+  function getDelayProps(i){
     const ms = Math.min(300 + i*80, 900)
-    return `opacity-100 translate-y-0 transition-all duration-700` + ` delay-[${ms}ms]`
+    const style = { transitionDelay: `${ms}ms` }
+    const className = inView ? 'opacity-100 translate-y-0 transition-all duration-700' : 'opacity-0 translate-y-4'
+    return { className, style }
   }
 
-  return [ref, inView, getDelayClass]
+  return [ref, inView, getDelayProps]
 }

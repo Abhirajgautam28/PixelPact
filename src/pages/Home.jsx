@@ -14,9 +14,9 @@ const rotating = [
   'Share & iterate 🔁',
   'Present beautifully 🎨'
 ]
-function FeatureCard({title, desc, icon, delayClass}){
+function FeatureCard({title, desc, icon, delayClass, delayStyle}){
   return (
-    <div className={`p-6 glass transform ${delayClass}`}>
+    <div className={`p-6 glass transform ${delayClass}`} style={delayStyle}>
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-md flex items-center justify-center bg-gradient-to-br from-[#ffd6e0] to-[#e7f5ff]">{icon}</div>
         <div>
@@ -45,7 +45,7 @@ export default function Home(){
   },[])
   const [templatesRef, templatesInView] = useInView({threshold:0.15})
   const [integrationsRef, integrationsInView] = useInView({threshold:0.2})
-  const [featuresRef, featuresInView, getDelayClass] = useStaggeredInView({threshold:0.12})
+  const [featuresRef, featuresInView, getDelayProps] = useStaggeredInView({threshold:0.12})
 
   const features = [
     {title: 'Real-time collaboration', desc: 'Low-latency sync, live cursors, and voice chat integration.', icon: '🎯'},
@@ -71,8 +71,10 @@ export default function Home(){
             </div>
           </div>
 
-          <div className="mt-8 flex gap-4">
-            <button className="px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room 🚀</button>
+          <div className="mt-8 flex gap-4 items-center justify-start">
+            <button className="relative px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room 🚀
+              <span className="absolute -right-3 -top-2 w-3 h-3 rounded-full bg-[#ff6b6b] animate-pulse" />
+            </button>
             <a href="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Watch demo</a>
           </div>
 
@@ -102,9 +104,10 @@ export default function Home(){
       <div>
         <h3 className="text-2xl font-semibold">Key features</h3>
         <div className="mt-6 grid md:grid-cols-3 gap-6" ref={featuresRef}>
-          {features.map((f, i)=> (
-            <FeatureCard key={f.title} title={f.title} desc={f.desc} icon={f.icon} delayClass={getDelayClass(i)} />
-          ))}
+          {features.map((f, i)=> {
+            const { className, style } = getDelayProps(i)
+            return <FeatureCard key={f.title} title={f.title} desc={f.desc} icon={f.icon} delayClass={className} delayStyle={style} />
+          })}
         </div>
       </div>
 
