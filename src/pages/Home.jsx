@@ -1,7 +1,7 @@
 import React, {useState, useEffect, Suspense, lazy} from 'react'
-const HeroIllustration = lazy(()=> import('../components/illustrations/HeroIllustration'))
-const TemplatesIllustration = lazy(()=> import('../components/illustrations/TemplatesIllustration'))
-const IntegrationsIllustration = lazy(()=> import('../components/illustrations/IntegrationsIllustration'))
+const HeroIllustration = lazy(()=> import('../components/illustrations/generated/Hero.jsx'))
+const TemplatesIllustration = lazy(()=> import('../components/illustrations/generated/Templates.jsx'))
+const IntegrationsIllustration = lazy(()=> import('../components/illustrations/generated/Integrations.jsx'))
 import HeroPlaceholder from '../components/illustrations/placeholders/HeroPlaceholder'
 import TemplatesPlaceholder from '../components/illustrations/placeholders/TemplatesPlaceholder'
 import IntegrationsPlaceholder from '../components/illustrations/placeholders/IntegrationsPlaceholder'
