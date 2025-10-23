@@ -9,15 +9,19 @@ function Canvas({ className }){
   useEffect(()=>{
     const c = canvasRef.current
     if(!c) return
-    const ctx = c.getContext('2d')
+    let ctx = null
+    try { ctx = c.getContext('2d') } catch (e) { ctx = null }
     const resize = ()=>{
+      if (!c) return
       const { width, height } = c.getBoundingClientRect()
       const ratio = window.devicePixelRatio || 1
       c.width = Math.floor(width * ratio)
       c.height = Math.floor(height * ratio)
-      ctx.scale(ratio, ratio)
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
+      if (ctx && typeof ctx.scale === 'function') {
+        ctx.scale(ratio, ratio)
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+      }
     }
     resize()
     window.addEventListener('resize', resize)
@@ -27,7 +31,9 @@ function Canvas({ className }){
   useEffect(()=>{
     const c = canvasRef.current
     if(!c) return
-    const ctx = c.getContext('2d')
+    let ctx = null
+    try { ctx = c.getContext('2d') } catch (e) { ctx = null }
+    if (!ctx) return
     ctx.strokeStyle = color
     ctx.lineWidth = lineWidth
   }, [color, lineWidth])
@@ -49,7 +55,9 @@ function Canvas({ className }){
   function move(e){
     if(!drawing) return
     const pos = getPos(e)
-    const ctx = canvasRef.current.getContext('2d')
+    let ctx = null
+    try { ctx = canvasRef.current.getContext('2d') } catch (err) { ctx = null }
+    if (!ctx) return
     ctx.strokeStyle = color
     ctx.lineWidth = lineWidth
     ctx.beginPath()
@@ -61,7 +69,9 @@ function Canvas({ className }){
   function end(){ setDrawing(false); last.current = null }
   function clear(){
     const c = canvasRef.current
-    const ctx = c.getContext('2d')
+    let ctx = null
+    try { ctx = c.getContext('2d') } catch (err) { ctx = null }
+    if (!ctx) return
     ctx.clearRect(0,0,c.width,c.height)
   }
 

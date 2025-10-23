@@ -20,7 +20,8 @@
 		"globals": true,
 		"setupFiles": [
 			"src/setupTests.js"
-		]
+		],
+		"exclude": ["tests/e2e/**"]
 	},
 	"dependencies": {
 		"lottie-web": "^5.13.0",
