@@ -1,4 +1,7 @@
-import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect, Suspense, lazy} from 'react'
+const HeroIllustration = lazy(()=> import('../components/illustrations/HeroIllustration'))
+const TemplatesIllustration = lazy(()=> import('../components/illustrations/TemplatesIllustration'))
+const IntegrationsIllustration = lazy(()=> import('../components/illustrations/IntegrationsIllustration'))
 
 const rotating = [
   'Sketch together ✏️',
@@ -67,7 +70,13 @@ export default function Home(){
                 <div className="text-sm font-semibold">Canvas • Room #123</div>
                 <div className="text-xs text-slate-400">Live • 5 participants</div>
               </div>
-              <div className="flex-1 rounded-md bg-gradient-to-br from-[#fff] to-[#f7fbff] border border-slate-100 flex items-center justify-center text-slate-400">Interactive canvas preview</div>
+              <div className="flex-1 rounded-md bg-gradient-to-br from-[#fff] to-[#f7fbff] border border-slate-100 flex items-center justify-center text-slate-400">
+                <div className="w-full h-full animate-fade-in-up">
+                  <Suspense fallback={<div className="w-full h-full bg-slate-100 animate-pulse"/>}>
+                    <HeroIllustration />
+                  </Suspense>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -91,7 +100,13 @@ export default function Home(){
         <h3 className="text-2xl font-semibold">Templates gallery</h3>
         <p className="text-slate-600 mt-2">Kickstart sessions with curated templates for design, strategy, and planning.</p>
         <div className="mt-6 grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="glass p-4">Product roadmap template</div>
+          <div className="glass p-4 flex items-center justify-center">
+            <div className="w-full h-28 animate-fade-in-left">
+              <Suspense fallback={<div className="w-full h-full bg-slate-100 animate-pulse"/>}>
+                <TemplatesIllustration />
+              </Suspense>
+            </div>
+          </div>
           <div className="glass p-4">Brainstorming canvas</div>
           <div className="glass p-4">Design critique board</div>
           <div className="glass p-4">Customer journey map</div>
@@ -104,8 +119,14 @@ export default function Home(){
       <div>
         <h3 className="text-2xl font-semibold">Integrations</h3>
         <p className="text-slate-600 mt-2">Connect PixelPact with your workflow.</p>
-        <div className="mt-4 flex flex-wrap gap-4">
-          <div className="p-3 glass">Figma</div>
+        <div className="mt-4 flex flex-wrap gap-4 items-center">
+          <div className="p-3 glass flex items-center">
+            <div className="w-40 h-14 animate-fade-in">
+              <Suspense fallback={<div className="w-full h-full bg-slate-100 animate-pulse"/>}>
+                <IntegrationsIllustration />
+              </Suspense>
+            </div>
+          </div>
           <div className="p-3 glass">Slack</div>
           <div className="p-3 glass">Notion</div>
           <div className="p-3 glass">Google Drive</div>
