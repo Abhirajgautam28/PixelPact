@@ -10,11 +10,9 @@
     "test": "vitest"
   },
   "vitest": {
-    "test": {
-      "environment": "jsdom",
-      "globals": true,
-      "setupFiles": ["src/setupTests.js"]
-    }
+    "environment": "jsdom",
+    "globals": true,
+    "setupFiles": ["src/setupTests.js"]
   },
   "dependencies": {
     "react": "18.2.0",
