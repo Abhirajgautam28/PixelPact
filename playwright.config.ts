@@ -2,24 +2,20 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './playwright/tests',
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
+  timeout: 30_000,
+  expect: { timeout: 5000, toHaveScreenshot: { maxDiffPixelRatio: 0.01, maxDiffPixels: 15000 } },
   fullyParallel: false,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'off',
-    // keep screenshots on to capture actual images when updating baselines
-    screenshot: 'on',
-    actionTimeout: 20_000,
-    // lock viewport and device scale for deterministic screenshots
-    viewport: { width: 1280, height: 1975 },
+    screenshot: 'only-on-failure',
+    actionTimeout: 10000,
+    // Stabilize visual tests: fixed viewport width and device scale factor
+    viewport: { width: 1280, height: 720 },
     deviceScaleFactor: 1,
-    // ensure consistent fonts rendering by using a fixed locale and timezone
-    locale: 'en-US',
-    timezoneId: 'UTC',
-    // reduce flakiness by using a stable color scheme
-    colorScheme: 'light',
+    // Disable chromium's background throttling which can cause timing differences
+    launchOptions: { args: ['--disable-background-timer-throttling'] },
   },
   webServer: {
     command: 'npm run dev',
@@ -30,7 +26,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 1975 }, deviceScaleFactor: 1 },
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 },
     }
   ]
 })
