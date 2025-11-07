@@ -8,6 +8,10 @@
 import fs from 'fs'
 import path from 'path'
 
+// Optional remote mode: if --server is provided, the CLI will call the server API instead of editing
+// the local file. This supports --password to exchange for a JWT via /api/admin/login, or
+// --token to provide an admin token directly.
+
 const p = path.resolve(process.cwd(), 'server', 'testimonials.json')
 function read(){
   if (!fs.existsSync(p)) return []
@@ -45,6 +49,20 @@ function parseOpts(argv){
 }
 
 if (cmd === 'list'){
+  const opts = parseOpts(args.slice(1))
+  if (opts.server){
+    // remote list
+    (async ()=>{
+      if (typeof fetch !== 'function') return console.error('Remote mode requires Node with global fetch')
+      const res = await fetch(`${opts.server.replace(/\/$/, '')}/api/testimonials`)
+      if (!res.ok) return console.error('Failed to fetch testimonials:', res.status)
+      const arr = await res.json()
+      if (!arr || arr.length === 0) { console.log('No testimonials present') ; process.exit(0) }
+      arr.forEach((t,i)=> console.log(`#${i}: ${t.name} — ${t.role}\n  ${t.text}\n`))
+      process.exit(0)
+    })()
+    return
+  }
   const arr = read()
   if (!arr || arr.length === 0) { console.log('No testimonials present') ; process.exit(0) }
   arr.forEach((t,i)=>{
@@ -56,6 +74,25 @@ if (cmd === 'list'){
 if (cmd === 'add'){
   const opts = parseOpts(args.slice(1))
   if (!opts.name || !opts.role || !opts.text) { console.error('add requires --name --role --text'); usage() }
+  if (opts.server){
+    ;(async ()=>{
+      if (typeof fetch !== 'function') return console.error('Remote mode requires Node with global fetch')
+      // obtain token
+      let token = opts.token
+      if (!token && opts.password){
+        const loginRes = await fetch(`${opts.server.replace(/\/$/, '')}/api/admin/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: opts.password }) })
+        if (!loginRes.ok) return console.error('Failed admin login:', loginRes.status)
+        const jb = await loginRes.json()
+        token = `Bearer ${jb.token}`
+      }
+      const res = await fetch(`${opts.server.replace(/\/$/, '')}/api/testimonials`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': token || '' }, body: JSON.stringify({ name: opts.name, role: opts.role, text: opts.text }) })
+      if (!res.ok) return console.error('Failed to add:', res.status)
+      const body = await res.json()
+      console.log('Added testimonial. Total now:', body.length)
+      process.exit(0)
+    })()
+    return
+  }
   const arr = read()
   arr.push({ name: opts.name, role: opts.role, text: opts.text })
   write(arr)
@@ -67,6 +104,24 @@ if (cmd === 'remove'){
   const opts = parseOpts(args.slice(1))
   const idx = parseInt(opts.index,10)
   if (isNaN(idx)) { console.error('remove requires --index <n>'); usage() }
+  if (opts.server){
+    ;(async ()=>{
+      if (typeof fetch !== 'function') return console.error('Remote mode requires Node with global fetch')
+      let token = opts.token
+      if (!token && opts.password){
+        const loginRes = await fetch(`${opts.server.replace(/\/$/, '')}/api/admin/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: opts.password }) })
+        if (!loginRes.ok) return console.error('Failed admin login:', loginRes.status)
+        const jb = await loginRes.json()
+        token = `Bearer ${jb.token}`
+      }
+      const res = await fetch(`${opts.server.replace(/\/$/, '')}/api/testimonials/${idx}`, { method: 'DELETE', headers: { 'Authorization': token || '' } })
+      if (!res.ok) return console.error('Failed to remove:', res.status)
+      const body = await res.json()
+      console.log('Removed. Total now:', body.length)
+      process.exit(0)
+    })()
+    return
+  }
   const arr = read()
   if (idx < 0 || idx >= arr.length) { console.error('index out of range'); process.exit(2) }
   const removed = arr.splice(idx,1)

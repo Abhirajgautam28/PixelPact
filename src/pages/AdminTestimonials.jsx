@@ -36,6 +36,36 @@ export default function AdminTestimonials(){
     sessionStorage.setItem('adminToken', token)
   }
 
+  function normalizeToken(input){
+    if (!input) return ''
+    if (input.startsWith('Bearer ')) return input
+    // simple JWT detection (three dot parts)
+    if ((input.match(/\./g) || []).length === 2) return `Bearer ${input}`
+    return input
+  }
+
+  async function attemptLogin(){
+    if (!passphrase) return alert('Enter admin password or token')
+    try{
+      // Try password exchange first
+      const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: passphrase }) })
+      if (res.ok){
+        const body = await res.json()
+        if (body && body.token){
+          saveToken(`Bearer ${body.token}`)
+          setPassphrase('')
+          return
+        }
+      }
+      // Fallback: treat input as a token (legacy token or raw JWT)
+      saveToken(normalizeToken(passphrase))
+      setPassphrase('')
+    }catch(e){
+      console.warn('Login error', e)
+      alert('Login failed')
+    }
+  }
+
   async function addTestimonial(t){
     try{
       const res = await fetch('/api/testimonials', { method: 'POST', headers: { 'Content-Type':'application/json', 'Authorization': authToken }, body: JSON.stringify(t) })
@@ -70,11 +100,12 @@ export default function AdminTestimonials(){
         <h2 className="text-2xl font-semibold">Testimonials Admin</h2>
         <div className="w-80">
           <div className="text-xs text-slate-500 mb-1">Admin token (session)</div>
-          <input className="w-full p-2 border border-slate-200 rounded" value={authToken || passphrase} onChange={e=> setPassphrase(e.target.value)} placeholder="Enter admin token and click Save" />
+          <input className="w-full p-2 border border-slate-200 rounded" value={passphrase} onChange={e=> setPassphrase(e.target.value)} placeholder="Admin password or token (paste JWT or legacy token)" />
           <div className="mt-2 flex gap-2">
-            <button className="px-3 py-2 rounded bg-[#6C5CE7] text-white" onClick={()=> saveToken(passphrase)}>Save</button>
+            <button className="px-3 py-2 rounded bg-[#6C5CE7] text-white" onClick={attemptLogin}>Login / Save</button>
             <button className="px-3 py-2 rounded border" onClick={()=>{ setAuthToken(''); sessionStorage.removeItem('adminToken'); setPassphrase('') }}>Logout</button>
           </div>
+          {authToken && <div className="mt-2 text-xs text-slate-500">Logged in token: <span className="font-mono text-[10px] break-all">{authToken}</span></div>}
         </div>
       </div>
 
