@@ -78,6 +78,8 @@ export default function Home(){
   const [templatesRef, templatesInView] = useInView({threshold:0.15})
   const [integrationsRef, integrationsInView] = useInView({threshold:0.2})
   const [featuresRef, featuresInView, getDelayProps] = useStaggeredInView({threshold:0.12})
+  const [testimonialsRef, testimonialsInView, getTestDelayProps] = useStaggeredInView({threshold:0.12})
+  const [testimonials, setTestimonials] = useState([])
 
   const features = [
     {title: 'Real-time collaboration', desc: 'Low-latency sync, live cursors, and voice chat integration.', icon: '🎯'},
@@ -168,6 +170,26 @@ export default function Home(){
     }
     // run in next tick to avoid blocking
     setTimeout(()=> gen(), 0)
+    return ()=> { mounted = false }
+  }, [])
+
+  useEffect(()=>{
+    // load testimonials from server; only show real data
+    // guard for test/jsdom environment where relative fetch('/api/...') is invalid
+    if (typeof window === 'undefined' || !window.location || (window.location.protocol && window.location.protocol.startsWith('about'))) return
+    let mounted = true
+    async function loadTestimonials(){
+      try{
+        const res = await fetch('/api/testimonials')
+        if (!res.ok) return
+        const body = await res.json()
+        if (mounted && Array.isArray(body)) setTestimonials(body)
+      }catch(e){
+        // silent — if no backend provided, we intentionally hide testimonials
+        console.warn('Failed to load testimonials:', e && e.message ? e.message : e)
+      }
+    }
+    loadTestimonials()
     return ()=> { mounted = false }
   }, [])
 
@@ -263,15 +285,22 @@ export default function Home(){
         </div>
       </div>
 
-      {/* Testimonials */}
-      <div>
-        <h3 className="text-2xl font-semibold">What customers say</h3>
-        <div className="mt-4 grid md:grid-cols-3 gap-4">
-          <Testimonial name="Sara K." role="Design Lead" text="PixelPact transformed how our product team ideates. Rapid, delightful, and reliable." />
-          <Testimonial name="Jon P." role="PM" text="We reduced meeting time by 30% — collaboration just flows now." />
-          <Testimonial name="Aisha R." role="CTO" text="Enterprise-grade controls and performance at scale made it an easy choice." />
+      {/* Testimonials: only render when the server returns data; we avoid any fake/test content */}
+      {testimonials && testimonials.length > 0 && (
+        <div>
+          <h3 className="text-2xl font-semibold">What customers say</h3>
+          <div className="mt-4 grid md:grid-cols-3 gap-4" ref={testimonialsRef}>
+            {testimonials.map((t, i)=>{
+              const { className, style } = getTestDelayProps(i)
+              return (
+                <div key={t.id || t.name + i} className={className} style={style}>
+                  <Testimonial name={t.name} role={t.role} text={t.text} />
+                </div>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* CTA */}
       <div className="text-center">
