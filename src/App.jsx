@@ -10,6 +10,7 @@ const Demo = lazy(()=> import('./pages/Demo'))
 const Register = lazy(()=> import('./pages/Register'))
 const Login = lazy(()=> import('./pages/Login'))
 const Whiteboard = lazy(()=> import('./pages/Whiteboard'))
+const AdminTestimonials = lazy(()=> import('./pages/AdminTestimonials'))
 const Privacy = lazy(()=> import('./pages/Privacy'))
 const Terms = lazy(()=> import('./pages/Terms'))
 
@@ -33,6 +34,7 @@ export default function App() {
               <Route path="/terms" element={<Terms/>} />
               <Route path="/register" element={<Register/>} />
               <Route path="/login" element={<Login/>} />
+              <Route path="/admin/testimonials" element={<AdminTestimonials/>} />
               <Route path="/board/:id" element={<Whiteboard/>} />
             </Routes>
           </Suspense>

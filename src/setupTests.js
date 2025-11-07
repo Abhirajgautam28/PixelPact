@@ -18,7 +18,7 @@ if (typeof console !== 'undefined' && console.error) {
 	console.error = (...args) => {
 		try {
 			const first = args[0]
-			if (typeof first === 'string' && first.includes('Not implemented: HTMLCanvasElement.prototype.getContext')) {
+				if (typeof first === 'string' && (first.includes('Not implemented: HTMLCanvasElement.prototype.getContext') || first.includes('React Router Future Flag Warning'))) {
 				return
 			}
 		} catch (e) {
@@ -28,13 +28,25 @@ if (typeof console !== 'undefined' && console.error) {
 	}
 }
 
+	// Also filter React Router future-flag warnings from console.warn to keep test output clean
+	if (typeof console !== 'undefined' && console.warn) {
+		const origConsoleWarn = console.warn.bind(console)
+		console.warn = (...args) => {
+			try {
+				const first = args[0]
+				if (typeof first === 'string' && first.includes('React Router Future Flag Warning')) return
+			} catch (e) { }
+			origConsoleWarn(...args)
+		}
+	}
+
 // Also filter that message from process.stderr (jsdom VirtualConsole writes there)
 if (typeof process !== 'undefined' && process.stderr && typeof process.stderr.write === 'function') {
 	const origWrite = process.stderr.write.bind(process.stderr)
 	process.stderr.write = (chunk, encoding, cb) => {
 		try{
 			const s = typeof chunk === 'string' ? chunk : (chunk && chunk.toString ? chunk.toString() : '')
-			if (s && s.includes('Not implemented: HTMLCanvasElement.prototype.getContext')) return true
+			if (s && (s.includes('Not implemented: HTMLCanvasElement.prototype.getContext') || s.includes('React Router Future Flag Warning'))) return true
 		}catch(e){ }
 		return origWrite(chunk, encoding, cb)
 	}
