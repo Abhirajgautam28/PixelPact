@@ -31,3 +31,12 @@ html, body, #root {
 
 .emoji { font-family: 'Inter', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; }
 
+/* Modal fade & scale animation */
+@keyframes modal-fade-scale {
+  from { opacity: 0; transform: scale(.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.modal-animate {
+  animation: modal-fade-scale 180ms ease-out forwards;
+}
+
