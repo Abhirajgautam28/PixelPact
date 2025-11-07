@@ -146,6 +146,74 @@ app.get('/api/testimonials', (req, res) => {
   }
 })
 
+// Admin-protected endpoints to modify testimonials.
+function checkAdmin(req){
+  const token = req.headers && (req.headers.authorization || req.headers.Authorization)
+  const expected = process.env.ADMIN_TOKEN || 'dev-admin-token'
+  return token === expected || token === `Bearer ${expected}`
+}
+
+// basic sanitizer + validator
+function sanitizeString(s, maxLen = 1000){
+  if (typeof s !== 'string') return ''
+  // strip tags and control chars
+  let out = s.replace(/<[^>]*>/g, '')
+  out = out.replace(/[\x00-\x1F\x7F]/g, '')
+  out = out.trim()
+  if (out.length > maxLen) out = out.slice(0, maxLen)
+  return out
+}
+
+app.post('/api/testimonials', (req, res) => {
+  if (!checkAdmin(req)) return res.status(401).json({ message: 'unauthorized' })
+  try{
+    const p = path.resolve(process.cwd(), 'server', 'testimonials.json')
+    const raw = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '[]'
+    const arr = JSON.parse(raw || '[]')
+    const t = req.body || {}
+    const name = sanitizeString(t.name || '', 100)
+    const role = sanitizeString(t.role || '', 100)
+    const text = sanitizeString(t.text || '', 1000)
+    if (!name || !text) return res.status(400).json({ message: 'invalid' })
+    arr.push({ name, role, text })
+    fs.writeFileSync(p, JSON.stringify(arr, null, 2), 'utf8')
+    return res.json(arr)
+  }catch(err){ console.error(err); return res.status(500).json({ message: 'error' }) }
+})
+
+app.put('/api/testimonials/:idx', (req, res) => {
+  if (!checkAdmin(req)) return res.status(401).json({ message: 'unauthorized' })
+  try{
+    const idx = parseInt(req.params.idx,10)
+    const p = path.resolve(process.cwd(), 'server', 'testimonials.json')
+    const raw = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '[]'
+    const arr = JSON.parse(raw || '[]')
+    if (isNaN(idx) || idx < 0 || idx >= arr.length) return res.status(400).json({ message: 'invalid index' })
+    const t = req.body || {}
+    const name = sanitizeString(t.name || arr[idx].name, 100)
+    const role = sanitizeString(t.role || arr[idx].role, 100)
+    const text = sanitizeString(t.text || arr[idx].text, 1000)
+    if (!name || !text) return res.status(400).json({ message: 'invalid' })
+    arr[idx] = { name, role, text }
+    fs.writeFileSync(p, JSON.stringify(arr, null, 2), 'utf8')
+    return res.json(arr)
+  }catch(err){ console.error(err); return res.status(500).json({ message: 'error' }) }
+})
+
+app.delete('/api/testimonials/:idx', (req, res) => {
+  if (!checkAdmin(req)) return res.status(401).json({ message: 'unauthorized' })
+  try{
+    const idx = parseInt(req.params.idx,10)
+    const p = path.resolve(process.cwd(), 'server', 'testimonials.json')
+    const raw = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '[]'
+    const arr = JSON.parse(raw || '[]')
+    if (isNaN(idx) || idx < 0 || idx >= arr.length) return res.status(400).json({ message: 'invalid index' })
+    arr.splice(idx,1)
+    fs.writeFileSync(p, JSON.stringify(arr, null, 2), 'utf8')
+    return res.json(arr)
+  }catch(err){ console.error(err); return res.status(500).json({ message: 'error' }) }
+})
+
 // Invite: generate a simple share token (stateless JWT)
 app.post('/api/rooms/:id/invite', (req, res)=>{
   const { id } = req.params
@@ -169,6 +237,13 @@ io.on('connection', (socket) => {
 })
 
 const PORT = process.env.PORT || 3001
-server.listen(PORT, ()=> console.log('server listening on', PORT))
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, ()=> console.log('server listening on', PORT))
+} else {
+  // When running tests we don't auto-start the HTTP server; tests can import `app` and use supertest.
+  console.log('test env detected: server not automatically started')
+}
 
+// Export the app and server for tests and programmatic use. Keep default export for backward compat.
+export { app, server }
 export default app
