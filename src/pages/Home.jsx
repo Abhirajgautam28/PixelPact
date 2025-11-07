@@ -18,6 +18,9 @@ import tpl4 from '../assets/images/placeholders/template-4.svg'
 import tpl5 from '../assets/images/placeholders/template-5.svg'
 import tpl6 from '../assets/images/placeholders/template-6.svg'
 import PreviewModal from '../components/PreviewModal'
+import AdminDrawer from '../components/AdminDrawer'
+
+const AdminPanel = lazy(()=> import('./AdminTestimonials'))
 
 const rotating = [
   'Sketch together ✏️',
@@ -104,6 +107,7 @@ export default function Home(){
   // previewSources holds generated webp data URLs keyed by template title
   const [previewSources, setPreviewSources] = useState({})
   const navigate = useNavigate()
+  const [showAdmin, setShowAdmin] = useState(false)
 
   async function openTemplateInEditor(template){
     try{
@@ -303,6 +307,31 @@ export default function Home(){
       )}
 
       {/* CTA */}
+      {/* Admin panel (embedded) - only in non-production builds */}
+      {import.meta.env.MODE !== 'production' && (
+        <>
+          <div>
+            <h3 className="text-2xl font-semibold">Admin</h3>
+            <p className="text-slate-600 mt-2">Open the admin panel to manage testimonials and site data. This panel requires an admin token or password and runs entirely in-browser.</p>
+            <div className="mt-4">
+              <div className="glass p-4">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold">Admin panel</div>
+                  <button className="px-3 py-1 rounded border text-sm" onClick={()=> setShowAdmin(s=> !s)}>{showAdmin ? 'Hide' : 'Open'}</button>
+                </div>
+                <div className="mt-4">
+                  <div className="text-sm text-slate-500">Open the admin slide-over to manage testimonials.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <AdminDrawer open={showAdmin} onClose={()=> setShowAdmin(false)}>
+            <Suspense fallback={<div className="text-sm text-slate-500">Loading admin…</div>}>
+              <AdminPanel />
+            </Suspense>
+          </AdminDrawer>
+        </>
+      )}
       <div className="text-center">
         <h3 className="text-2xl font-semibold">Ready to create together?</h3>
         <p className="text-slate-600 mt-2">Start a room in seconds — invite teammates, or try a demo session.</p>
