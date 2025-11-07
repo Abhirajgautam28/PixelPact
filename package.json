@@ -10,7 +10,7 @@
 		"svgr": "svgr src/assets/svgs -d src/components/illustrations/generated --icon --ext .jsx",
 		"build": "npm run svgr && vite build",
 		"preview": "vite preview",
-	"test": "vitest src/__tests__ --run",
+	"test": "node scripts/run-tests.js",
 		"test:watch": "vitest src/__tests__ --watch",
 		"playwright:install": "npx playwright install --with-deps",
 		"e2e": "playwright test",

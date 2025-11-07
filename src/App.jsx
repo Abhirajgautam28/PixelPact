@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
 
@@ -18,29 +18,29 @@ function Loader(){
   return <div className="text-center py-12">Loading…</div>
 }
 
+const router = createBrowserRouter([
+  { path: '/', element: <Home/> },
+  { path: '/about', element: <About/> },
+  { path: '/pricing', element: <Pricing/> },
+  { path: '/demo', element: <Demo/> },
+  { path: '/privacy', element: <Privacy/> },
+  { path: '/terms', element: <Terms/> },
+  { path: '/register', element: <Register/> },
+  { path: '/login', element: <Login/> },
+  { path: '/admin/testimonials', element: <AdminTestimonials/> },
+  { path: '/board/:id', element: <Whiteboard/> },
+], { future: { v7_startTransition: true, v7_relativeSplatPath: true } })
+
 export default function App() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen text-slate-900">
-        <Nav />
-        <main className="max-w-7xl mx-auto px-6 py-12">
-          <Suspense fallback={<Loader/>}>
-            <Routes>
-              <Route path="/" element={<Home/>} />
-              <Route path="/about" element={<About/>} />
-              <Route path="/pricing" element={<Pricing/>} />
-              <Route path="/demo" element={<Demo/>} />
-              <Route path="/privacy" element={<Privacy/>} />
-              <Route path="/terms" element={<Terms/>} />
-              <Route path="/register" element={<Register/>} />
-              <Route path="/login" element={<Login/>} />
-              <Route path="/admin/testimonials" element={<AdminTestimonials/>} />
-              <Route path="/board/:id" element={<Whiteboard/>} />
-            </Routes>
-          </Suspense>
-        </main>
-        <Footer />
-      </div>
-    </BrowserRouter>
+    <div className="min-h-screen text-slate-900">
+      <Nav />
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        <Suspense fallback={<Loader/>}>
+          <RouterProvider router={router} />
+        </Suspense>
+      </main>
+      <Footer />
+    </div>
   )
 }
