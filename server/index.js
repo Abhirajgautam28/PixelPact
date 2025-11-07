@@ -147,11 +147,36 @@ app.get('/api/testimonials', (req, res) => {
 })
 
 // Admin-protected endpoints to modify testimonials.
+// Admin authentication: supports legacy shared token or JWT issued via /api/admin/login
 function checkAdmin(req){
-  const token = req.headers && (req.headers.authorization || req.headers.Authorization)
-  const expected = process.env.ADMIN_TOKEN || 'dev-admin-token'
-  return token === expected || token === `Bearer ${expected}`
+  const authHeader = (req.headers && (req.headers.authorization || req.headers.Authorization)) || ''
+  const expectedToken = process.env.ADMIN_TOKEN || 'dev-admin-token'
+  const jwtSecret = process.env.ADMIN_JWT_SECRET || 'dev-jwt-secret'
+
+  // Legacy direct token match (kept for backward compatibility)
+  if (authHeader === expectedToken || authHeader === `Bearer ${expectedToken}`) return true
+
+  // Bearer JWT: verify and require role: 'admin'
+  const m = authHeader.match(/^Bearer\s+(.+)$/i)
+  if (m){
+    const token = m[1]
+    try{
+      const payload = jwt.verify(token, jwtSecret)
+      if (payload && payload.role === 'admin') return true
+    }catch(e){ /* invalid token */ }
+  }
+  return false
 }
+
+// Admin login to exchange a server-side ADMIN_PASSWORD for a short-lived JWT
+app.post('/api/admin/login', (req, res) => {
+  const password = (req.body && req.body.password) || ''
+  const adminPassword = process.env.ADMIN_PASSWORD || 'dev-password'
+  const jwtSecret = process.env.ADMIN_JWT_SECRET || 'dev-jwt-secret'
+  if (!password || password !== adminPassword) return res.status(401).json({ message: 'invalid' })
+  const token = jwt.sign({ role: 'admin' }, jwtSecret, { expiresIn: '7d' })
+  return res.json({ token })
+})
 
 // basic sanitizer + validator
 function sanitizeString(s, maxLen = 1000){
