@@ -169,3 +169,26 @@ Note: remote mode uses the global `fetch`. On older Node versions the CLI will a
 Notes
 
 - This is a homepage scaffold. Integrate with your existing app or use it as a standalone front page.
+
+## Admin UI opt-in (Vite)
+
+The in-browser admin UI (testimonials manager) is intentionally hidden in production by default.
+
+To enable the admin UI in a production build you can opt-in using a Vite environment variable:
+
+- In development the admin UI is shown automatically.
+- In production, enable it explicitly by setting `VITE_ENABLE_ADMIN=true` before building.
+
+PowerShell example (build with admin UI enabled):
+
+```powershell
+$env:VITE_ENABLE_ADMIN = 'true'; npm run build
+```
+
+Or when running the preview server after building:
+
+```powershell
+$env:VITE_ENABLE_ADMIN = 'true'; npm run preview
+```
+
+Security note: enabling the admin UI on production exposes a client-side management UI — ensure your server-side admin authentication (JWT or ADMIN_TOKEN and ADMIN_JWT_SECRET) is strongly protected and never commit production secrets to the repo. For production workflows we recommend managing testimonials via a secure server-side admin dashboard or CI-driven content pipeline rather than exposing an in-browser admin unless you understand the risk and have strong auth controls in place.

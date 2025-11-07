@@ -307,8 +307,8 @@ export default function Home(){
       )}
 
       {/* CTA */}
-      {/* Admin panel (embedded) - only in non-production builds */}
-      {import.meta.env.MODE !== 'production' && (
+  {/* Admin panel (embedded) - dev or explicitly enabled via VITE_ENABLE_ADMIN */}
+  {(import.meta.env.MODE !== 'production' || import.meta.env.VITE_ENABLE_ADMIN === 'true') && (
         <>
           <div>
             <h3 className="text-2xl font-semibold">Admin</h3>

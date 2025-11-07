@@ -15,6 +15,12 @@ export default class ErrorBoundary extends React.Component {
     this.setState({ error, info })
     // eslint-disable-next-line no-console
     console.error('Uncaught error in component tree:', error, info)
+    try{
+      // dynamic import the logger so we don't break in tests or node
+      import('../utils/errorLogger').then(mod => {
+        try{ mod.logUnhandledError(error, { componentStack: info?.componentStack }) }catch(e){}
+      }).catch(()=>{})
+    }catch(e){/* ignore */}
   }
 
   render(){

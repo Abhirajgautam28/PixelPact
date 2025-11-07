@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
 import { Outlet } from 'react-router-dom'
+import RouteError from './components/RouteError'
 
 const Home = lazy(()=> import('./pages/Home'))
 const About = lazy(()=> import('./pages/About'))
@@ -32,7 +33,7 @@ function RootLayout(){
 }
 
 const router = createBrowserRouter([
-  { path: '/', element: <RootLayout/>, children: [
+  { path: '/', element: <RootLayout/>, errorElement: <RouteError/>, children: [
     { path: '/', element: <Home/> },
     { path: '/about', element: <About/> },
     { path: '/pricing', element: <Pricing/> },
