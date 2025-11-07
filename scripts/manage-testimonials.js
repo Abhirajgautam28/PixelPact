@@ -12,6 +12,19 @@ import path from 'path'
 // the local file. This supports --password to exchange for a JWT via /api/admin/login, or
 // --token to provide an admin token directly.
 
+async function ensureFetch(){
+  if (typeof fetch === 'function') return
+  try{
+    const mod = await import('node-fetch')
+    // node-fetch v3 exports default
+    global.fetch = mod.default || mod
+    return
+  }catch(e){
+    console.error('Remote mode requires global fetch or the node-fetch package. Install with: npm i -D node-fetch')
+    process.exit(1)
+  }
+}
+
 const p = path.resolve(process.cwd(), 'server', 'testimonials.json')
 function read(){
   if (!fs.existsSync(p)) return []

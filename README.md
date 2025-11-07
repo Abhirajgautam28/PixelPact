@@ -139,6 +139,56 @@ Files added
 - `package.json`, Vite config, Tailwind & PostCSS configs
 - `src/` React app with components (`Nav`, `Hero`, `Features`, `Footer`)
 
+Developer utilities
+
+- `scripts/generate-admin-token.js` — convenience script to mint a signed admin JWT for local development. It signs the payload { role: 'admin' } using the `ADMIN_JWT_SECRET` (or `JWT_SECRET`) environment variable. Usage:
+
+   ```bash
+   # default: reads ADMIN_JWT_SECRET or falls back to 'dev-jwt-secret'
+   node scripts/generate-admin-token.js
+
+   # custom secret / expiry
+   node scripts/generate-admin-token.js --secret mysecret --expires 30d
+   ```
+
+- `scripts/manage-testimonials.js` supports optional remote mode (call the running server) via `--server`. In remote mode you can provide `--password` to exchange for a JWT via `/api/admin/login` or `--token` to pass an existing token. Examples:
+
+   ```bash
+   # Add testimonial locally (edits server/testimonials.json):
+   node scripts/manage-testimonials.js add --name "Jane" --role "CEO" --text "Great product"
+
+   # Add testimonial remotely using admin password:
+   node scripts/manage-testimonials.js add --server http://localhost:3001 --password dev-password --name "Jane" --role "CEO" --text "Great product"
+
+   # Add testimonial remotely using a pre-generated token:
+   node scripts/manage-testimonials.js add --server http://localhost:3001 --token "Bearer <your-token>" --name "Jane" --role "CEO" --text "Great product"
+   ```
+
+Note: remote mode uses the global `fetch`. On older Node versions the CLI will attempt to import `node-fetch` dynamically; install it with `npm i -D node-fetch` if needed.
+
 Notes
 
 - This is a homepage scaffold. Integrate with your existing app or use it as a standalone front page.
+
+## Admin UI opt-in (Vite)
+
+The in-browser admin UI (testimonials manager) is intentionally hidden in production by default.
+
+To enable the admin UI in a production build you can opt-in using a Vite environment variable:
+
+- In development the admin UI is shown automatically.
+- In production, enable it explicitly by setting `VITE_ENABLE_ADMIN=true` before building.
+
+PowerShell example (build with admin UI enabled):
+
+```powershell
+$env:VITE_ENABLE_ADMIN = 'true'; npm run build
+```
+
+Or when running the preview server after building:
+
+```powershell
+$env:VITE_ENABLE_ADMIN = 'true'; npm run preview
+```
+
+Security note: enabling the admin UI on production exposes a client-side management UI — ensure your server-side admin authentication (JWT or ADMIN_TOKEN and ADMIN_JWT_SECRET) is strongly protected and never commit production secrets to the repo. For production workflows we recommend managing testimonials via a secure server-side admin dashboard or CI-driven content pipeline rather than exposing an in-browser admin unless you understand the risk and have strong auth controls in place.
