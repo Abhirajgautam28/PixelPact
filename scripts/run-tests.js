@@ -3,20 +3,28 @@
 import { spawn } from 'child_process'
 import path from 'path'
 
+// Simple wrapper: ensure our preload is included in NODE_OPTIONS and spawn the vitest CLI.
 const projectRoot = process.cwd()
 const preloadPath = path.resolve(projectRoot, 'src', 'test-preload.js')
 
 const env = { ...process.env }
-// Ensure NODE_OPTIONS preserves existing flags but includes our preload
 const existing = env.NODE_OPTIONS ? env.NODE_OPTIONS + ' ' : ''
 env.NODE_OPTIONS = `${existing}-r ${preloadPath}`
 
-const args = ['vitest', 'src/__tests__', '--run']
+// Build vitest args: forward any args given to this script, default to run all tests
+const argv = process.argv.slice(2)
+const vitestArgs = argv.length ? argv : ['run']
 
-// Fallback: run vitest via a shell command to ensure the local binary is resolved by npm/npx on all platforms.
-// We call a single command string to avoid the spawn(shell:true,args) deprecation warning.
-const cmd = `npx ${args.join(' ')}`
-const child = spawn(cmd, { stdio: 'inherit', shell: true, env })
+// Prefer running the local vitest CLI via node to avoid relying on global npx. This works
+// cross-platform by invoking the local vitest JS entry with the current node executable.
+// Use npx via a shell so environments without a local bin layout still work reliably.
+const cmdStr = `npx vitest ${vitestArgs.map(a => JSON.stringify(a)).join(' ')}`
+const child = spawn(cmdStr, { stdio: 'inherit', env, shell: true })
 
-child.on('exit', code => process.exit(code))
-child.on('error', err => { console.error('Failed to run tests:', err); process.exit(1) })
+child.on('close', (code) => {
+	process.exit(typeof code === 'number' ? code : 0)
+})
+child.on('error', (err) => {
+	console.error('Failed to spawn vitest:', err)
+	process.exit(1)
+})
