@@ -139,6 +139,33 @@ Files added
 - `package.json`, Vite config, Tailwind & PostCSS configs
 - `src/` React app with components (`Nav`, `Hero`, `Features`, `Footer`)
 
+Developer utilities
+
+- `scripts/generate-admin-token.js` — convenience script to mint a signed admin JWT for local development. It signs the payload { role: 'admin' } using the `ADMIN_JWT_SECRET` (or `JWT_SECRET`) environment variable. Usage:
+
+   ```bash
+   # default: reads ADMIN_JWT_SECRET or falls back to 'dev-jwt-secret'
+   node scripts/generate-admin-token.js
+
+   # custom secret / expiry
+   node scripts/generate-admin-token.js --secret mysecret --expires 30d
+   ```
+
+- `scripts/manage-testimonials.js` supports optional remote mode (call the running server) via `--server`. In remote mode you can provide `--password` to exchange for a JWT via `/api/admin/login` or `--token` to pass an existing token. Examples:
+
+   ```bash
+   # Add testimonial locally (edits server/testimonials.json):
+   node scripts/manage-testimonials.js add --name "Jane" --role "CEO" --text "Great product"
+
+   # Add testimonial remotely using admin password:
+   node scripts/manage-testimonials.js add --server http://localhost:3001 --password dev-password --name "Jane" --role "CEO" --text "Great product"
+
+   # Add testimonial remotely using a pre-generated token:
+   node scripts/manage-testimonials.js add --server http://localhost:3001 --token "Bearer <your-token>" --name "Jane" --role "CEO" --text "Great product"
+   ```
+
+Note: remote mode uses the global `fetch`. On older Node versions the CLI will attempt to import `node-fetch` dynamically; install it with `npm i -D node-fetch` if needed.
+
 Notes
 
 - This is a homepage scaffold. Integrate with your existing app or use it as a standalone front page.
