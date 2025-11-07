@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "name": "Rebecca Moore",
+    "role": "Head of Product, Nova Apps",
+    "text": "PixelPact completely changed the way our product and design teams iterate. We run faster workshops and ship better features."
+  },
+  {
+    "name": "Carlos Jimenez",
+    "role": "Engineering Manager, Brightside",
+    "text": "Low-latency collaboration and a thoughtful template library made onboarding new hires effortless."
+  },
+  {
+    "name": "Abhiraj Gautam",
+    "role": "Founder",
+    "text": "As the founder, I built PixelPact to make team collaboration joyful and productive. We're committed to continuous improvements and your feedback matters."
+  },
+  {
+    "name": "Sam Lee",
+    "role": "Product Manager",
+    "text": "Great collaboration!"
+  }
+]

@@ -19,6 +19,9 @@
 		"e2e:run": "playwright test --headed",
 		"e2e:screenshots": "playwright test --project=chromium"
 	},
+	"bin": {
+		"manage-testimonials": "scripts/manage-testimonials.js"
+	},
 	"vitest": {
 		"environment": "jsdom",
 		"globals": true,
