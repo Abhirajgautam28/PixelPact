@@ -7,6 +7,8 @@ import bodyParser from 'body-parser'
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
+import fs from 'fs'
+import path from 'path'
 
 dotenv.config()
 
@@ -126,6 +128,22 @@ app.get('/api/rooms/:id', async (req, res) => {
       return res.json(r)
     }
   }catch(err){ console.error(err); res.status(500).json({ message: 'error' }) }
+})
+
+// Serve testimonials from a simple JSON file if present. Keep empty array as default.
+app.get('/api/testimonials', (req, res) => {
+  try{
+    const p = path.resolve(process.cwd(), 'server', 'testimonials.json')
+    if (fs.existsSync(p)){
+      const raw = fs.readFileSync(p, 'utf8')
+      const data = JSON.parse(raw || '[]')
+      return res.json(Array.isArray(data) ? data : [])
+    }
+    return res.json([])
+  }catch(err){
+    console.warn('Failed to read testimonials:', err && err.message)
+    return res.json([])
+  }
 })
 
 // Invite: generate a simple share token (stateless JWT)
