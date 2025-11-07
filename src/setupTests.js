@@ -11,6 +11,35 @@ if (typeof global.window === 'undefined') {
 	}
 }
 
+// Silence jsdom "Not implemented: HTMLCanvasElement.prototype.getContext" messages in test output
+// by filtering that exact message from console.error during tests.
+if (typeof console !== 'undefined' && console.error) {
+	const origConsoleError = console.error.bind(console)
+	console.error = (...args) => {
+		try {
+			const first = args[0]
+			if (typeof first === 'string' && first.includes('Not implemented: HTMLCanvasElement.prototype.getContext')) {
+				return
+			}
+		} catch (e) {
+			// ignore
+		}
+		origConsoleError(...args)
+	}
+}
+
+// Also filter that message from process.stderr (jsdom VirtualConsole writes there)
+if (typeof process !== 'undefined' && process.stderr && typeof process.stderr.write === 'function') {
+	const origWrite = process.stderr.write.bind(process.stderr)
+	process.stderr.write = (chunk, encoding, cb) => {
+		try{
+			const s = typeof chunk === 'string' ? chunk : (chunk && chunk.toString ? chunk.toString() : '')
+			if (s && s.includes('Not implemented: HTMLCanvasElement.prototype.getContext')) return true
+		}catch(e){ }
+		return origWrite(chunk, encoding, cb)
+	}
+}
+
 // Simple IntersectionObserver stub to make useInView hook predictable in tests
 if (typeof global.IntersectionObserver === 'undefined') {
 	global.IntersectionObserver = class {

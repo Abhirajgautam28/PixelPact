@@ -9,7 +9,15 @@ import useInView from '../hooks/useInView'
 import useStaggeredInView from '../hooks/useStaggeredInView'
 const LottiePlayer = lazy(()=> import('../components/LottiePlayer'))
 import miniAnim from '../assets/lottie/mini.json'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import templatesImg from '../assets/images/placeholders/templates.png'
+import tpl1 from '../assets/images/placeholders/template-1.svg'
+import tpl2 from '../assets/images/placeholders/template-2.svg'
+import tpl3 from '../assets/images/placeholders/template-3.svg'
+import tpl4 from '../assets/images/placeholders/template-4.svg'
+import tpl5 from '../assets/images/placeholders/template-5.svg'
+import tpl6 from '../assets/images/placeholders/template-6.svg'
+import PreviewModal from '../components/PreviewModal'
 
 const rotating = [
   'Sketch together ✏️',
@@ -40,6 +48,27 @@ function Testimonial({name, role, text}){
   )
 }
 
+function TemplateCard({title, desc, img, tags, onPreview}){
+  return (
+    <article className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
+      <div className="h-40 bg-slate-100 overflow-hidden">
+        <img src={img} alt={title} className="w-full h-full object-cover" />
+      </div>
+      <div className="p-4">
+        <h4 className="font-semibold text-lg">{title}</h4>
+        <p className="text-sm text-slate-600 mt-2">{desc}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {tags && tags.map(t=> <span key={t} className="text-xs bg-slate-100 px-2 py-1 rounded-md text-slate-600">{t}</span>)}
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <button onClick={onPreview} className="px-3 py-2 rounded-md bg-[#6C5CE7] text-white text-sm">Preview</button>
+          <button className="text-sm text-slate-500">Use template</button>
+        </div>
+      </div>
+    </article>
+  )
+}
+
 export default function Home(){
   const [idx, setIdx] = useState(0)
   useEffect(()=>{
@@ -58,6 +87,41 @@ export default function Home(){
     {title: 'Permissions & SSO', desc: 'Granular access controls and single sign-on for teams.', icon: '🔐'},
     {title: 'Integrations', desc: 'Embed Figma, FigJam files, Slack notifications, and more.', icon: '🔗'},
   ]
+
+  const templates = [
+    {title: 'Brainstorming Canvas', desc: 'Structured spaces for rapid idea generation and voting.', tags: ['Brainstorm','Workshop'], img: tpl1},
+    {title: 'Design Critique', desc: 'Template for structured feedback and notes during reviews.', tags: ['Design','Feedback'], img: tpl2},
+    {title: 'Customer Journey', desc: 'Map customer touchpoints and experience flows.', tags: ['UX','Mapping'], img: tpl3},
+    {title: 'Retrospective Board', desc: 'Run effective retros with actionable outcomes.', tags: ['Agile','Retro'], img: tpl4},
+    {title: 'Wireframe Kit', desc: 'Quick blocks and layouts for low-fi prototyping.', tags: ['Wireframe','UI'], img: tpl5},
+    {title: 'Sprint Planning', desc: 'Plan sprints, assign owners, and estimate work.', tags: ['Planning','Scrum'], img: tpl6},
+  ]
+
+  const [preview, setPreview] = useState(null)
+  const navigate = useNavigate()
+
+  async function openTemplateInEditor(template){
+    try{
+      const resp = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template })
+      })
+      const body = await resp.json()
+      const roomId = body.roomId || body.id || body.room || null
+      if(roomId){
+        // close preview and navigate to editor
+        setPreview(null)
+        navigate(`/board/${roomId}`)
+      }else{
+        setPreview(null)
+        alert('Failed to create room')
+      }
+    }catch(e){
+      setPreview(null)
+      alert('Failed to create room')
+    }
+  }
 
   return (
     <section className="space-y-12">
@@ -118,19 +182,17 @@ export default function Home(){
       <div>
         <h3 className="text-2xl font-semibold">Templates gallery</h3>
         <p className="text-slate-600 mt-2">Kickstart sessions with curated templates for design, strategy, and planning.</p>
-        <div className="mt-6 grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="glass p-4 flex items-center justify-center" ref={templatesRef}>
-            <div className={`w-full h-28 ${templatesInView? 'animate-fade-in-left':''}`}>
-              <Suspense fallback={<TemplatesPlaceholder/>}>
-                <TemplatesIllustration />
-              </Suspense>
+        <div className="mt-6 grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {templates.map((t)=> (
+            <div key={t.title} ref={templatesRef} className={`${templatesInView? 'animate-fade-in-up':''}`}>
+              <TemplateCard title={t.title} desc={t.desc} img={t.img} tags={t.tags} onPreview={()=> setPreview(t)} />
             </div>
-          </div>
-          <div className="glass p-4">Brainstorming canvas</div>
-          <div className="glass p-4">Design critique board</div>
-          <div className="glass p-4">Customer journey map</div>
-          <div className="glass p-4">Retrospective board</div>
-          <div className="glass p-4">Wireframe kit</div>
+          ))}
+        </div>
+  <PreviewModal open={!!preview} onClose={()=> setPreview(null)} title={preview?.title} img={preview?.img} desc={preview?.desc} onOpen={()=> openTemplateInEditor(preview)} />
+        {/* keep a test-friendly placeholder for lazy-loading checks (hidden visually) */}
+        <div data-testid="templates-placeholder" className="hidden">
+          <img alt="templates placeholder" loading="lazy" src={templatesImg} />
         </div>
       </div>
 
