@@ -89,15 +89,18 @@ export default function Home(){
   ]
 
   const templates = [
-    {title: 'Brainstorming Canvas', desc: 'Structured spaces for rapid idea generation and voting.', tags: ['Brainstorm','Workshop'], img: tpl1},
-    {title: 'Design Critique', desc: 'Template for structured feedback and notes during reviews.', tags: ['Design','Feedback'], img: tpl2},
-    {title: 'Customer Journey', desc: 'Map customer touchpoints and experience flows.', tags: ['UX','Mapping'], img: tpl3},
-    {title: 'Retrospective Board', desc: 'Run effective retros with actionable outcomes.', tags: ['Agile','Retro'], img: tpl4},
-    {title: 'Wireframe Kit', desc: 'Quick blocks and layouts for low-fi prototyping.', tags: ['Wireframe','UI'], img: tpl5},
-    {title: 'Sprint Planning', desc: 'Plan sprints, assign owners, and estimate work.', tags: ['Planning','Scrum'], img: tpl6},
+    {title: 'Brainstorming Canvas', desc: 'Structured spaces for rapid idea generation and voting.', tags: ['Brainstorm','Workshop'], img: tpl1, templateData: { shapes: [ { type: 'rect', x: 0.05, y: 0.05, w: 0.4, h: 0.35, fill: '#fff' }, { type: 'rect', x: 0.52, y: 0.05, w: 0.43, h: 0.35, fill: '#fff' }, { type: 'text', x: 0.05, y: 0.6, text: 'Brainstorm', fontSize: 28, color: '#92400e' } ] }},
+    {title: 'Design Critique', desc: 'Template for structured feedback and notes during reviews.', tags: ['Design','Feedback'], img: tpl2, templateData: { shapes: [ { type: 'text', x: 0.05, y: 0.12, text: 'Design Critique', fontSize: 36, color: '#5b21b6' }, { type: 'rect', x: 0.05, y: 0.22, w: 0.9, h: 0.55, fill: '#fff' } ] }},
+    {title: 'Customer Journey', desc: 'Map customer touchpoints and experience flows.', tags: ['UX','Mapping'], img: tpl3, templateData: { shapes: [ { type: 'text', x: 0.05, y: 0.18, text: 'Customer Journey', fontSize: 30, color: '#065f46' }, { type: 'rect', x: 0.05, y: 0.26, w: 0.9, h: 0.5, fill: '#fff' } ] }},
+    {title: 'Retrospective Board', desc: 'Run effective retros with actionable outcomes.', tags: ['Agile','Retro'], img: tpl4, templateData: { shapes: [ { type: 'text', x: 0.05, y: 0.12, text: 'Retrospective Board', fontSize: 30, color: '#9f1239' }, { type: 'rect', x: 0.05, y: 0.18, w: 0.9, h: 0.7, fill: '#fff' } ] }},
+    {title: 'Wireframe Kit', desc: 'Quick blocks and layouts for low-fi prototyping.', tags: ['Wireframe','UI'], img: tpl5, templateData: { shapes: [ { type: 'text', x: 0.05, y: 0.12, text: 'Wireframe Kit', fontSize: 30, color: '#434190' }, { type: 'rect', x: 0.05, y: 0.18, w: 0.4, h: 0.55, fill: '#fff' }, { type: 'rect', x: 0.47, y: 0.18, w: 0.48, h: 0.55, fill: '#fff' } ] }},
+    {title: 'Sprint Planning', desc: 'Plan sprints, assign owners, and estimate work.', tags: ['Planning','Scrum'], img: tpl6, templateData: { shapes: [ { type: 'text', x: 0.05, y: 0.12, text: 'Sprint Planning', fontSize: 30, color: '#166534' }, { type: 'rect', x: 0.05, y: 0.18, w: 0.9, h: 0.6, fill: '#fff' } ] }},
   ]
 
+  // preview modal state
   const [preview, setPreview] = useState(null)
+  // previewSources holds generated webp data URLs keyed by template title
+  const [previewSources, setPreviewSources] = useState({})
   const navigate = useNavigate()
 
   async function openTemplateInEditor(template){
@@ -122,6 +125,51 @@ export default function Home(){
       alert('Failed to create room')
     }
   }
+
+  useEffect(()=>{
+    // generate WebP previews for each template from the SVG thumbnails
+    let mounted = true
+    async function gen(){
+      const out = {}
+      for(const t of templates){
+        try{
+          // fetch SVG text
+          const resp = await fetch(t.img)
+          const svgText = await resp.text()
+          // create data URL for svg
+          const svgDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgText)
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          const p = new Promise((resolve)=>{
+            img.onload = ()=> resolve(true)
+            img.onerror = ()=> resolve(false)
+          })
+          img.src = svgDataUrl
+          await p
+          // draw to canvas and get webp
+          try{
+            const c = document.createElement('canvas')
+            const w = Math.min(720, img.naturalWidth || 720)
+            const h = Math.min(400, img.naturalHeight || 400)
+            c.width = w
+            c.height = h
+            const ctx = c.getContext && c.getContext('2d')
+            if (ctx) ctx.drawImage(img, 0, 0, w, h)
+            const webp = c.toDataURL ? c.toDataURL('image/webp', 0.8) : svgDataUrl
+            out[t.title] = webp
+          }catch(e){
+            out[t.title] = svgDataUrl
+          }
+        }catch(e){
+          out[t.title] = t.img
+        }
+      }
+      if (mounted) setPreviewSources(out)
+    }
+    // run in next tick to avoid blocking
+    setTimeout(()=> gen(), 0)
+    return ()=> { mounted = false }
+  }, [])
 
   return (
     <section className="space-y-12">
@@ -185,7 +233,7 @@ export default function Home(){
         <div className="mt-6 grid sm:grid-cols-2 md:grid-cols-3 gap-6">
           {templates.map((t)=> (
             <div key={t.title} ref={templatesRef} className={`${templatesInView? 'animate-fade-in-up':''}`}>
-              <TemplateCard title={t.title} desc={t.desc} img={t.img} tags={t.tags} onPreview={()=> setPreview(t)} />
+              <TemplateCard title={t.title} desc={t.desc} img={previewSources[t.title] || t.img} tags={t.tags} onPreview={()=> setPreview(t)} />
             </div>
           ))}
         </div>
