@@ -51,6 +51,69 @@ export default function Whiteboard(){
     return ()=> window.removeEventListener('resize', resize)
   }, [])
 
+  // load initial template image for the room (if any) when visiting /board/:id
+  useEffect(()=>{
+    // try to infer room id from path
+    try{
+      const parts = window.location.pathname.split('/')
+      const id = parts[parts.length-1]
+      if (!id) return
+      fetch(`/api/rooms/${id}`).then(r=> r.json()).then(data=>{
+        if (!data || !data.template) return
+        const tpl = data.template
+        if (tpl.img){
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          img.onload = ()=>{
+            const c = canvasRef.current
+            if (!c) return
+            const ctx = c.getContext && c.getContext('2d')
+            if (!ctx) return
+            // draw image to canvas scaled
+            ctx.clearRect(0,0,c.width,c.height)
+            // maintain aspect ratio
+            const ratio = Math.min(c.width / img.width, c.height / img.height)
+            const w = img.width * ratio
+            const h = img.height * ratio
+            const x = (c.width - w) / 2
+            const y = (c.height - h) / 2
+            ctx.drawImage(img, x, y, w, h)
+          }
+          img.src = tpl.img
+        }
+
+        // also if template contains structured templateData, render shapes
+        if (tpl.templateData && Array.isArray(tpl.templateData.shapes)){
+          const c = canvasRef.current
+          if (!c) return
+          const ctx = c.getContext && c.getContext('2d')
+          if (!ctx) return
+          // clear then draw each shape (coordinates assume normalized 0..1)
+          ctx.clearRect(0,0,c.width,c.height)
+          const W = c.width
+          const H = c.height
+          const drawShape = (s) => {
+            const x = (s.x || 0) * W
+            const y = (s.y || 0) * H
+            const w = (s.w || 0) * W
+            const h = (s.h || 0) * H
+            if (s.type === 'rect'){
+              ctx.fillStyle = s.fill || '#ffffff'
+              ctx.fillRect(x, y, w, h)
+              if (s.stroke){ ctx.strokeStyle = s.stroke; ctx.strokeRect(x, y, w, h) }
+            }else if (s.type === 'text'){
+              ctx.fillStyle = s.color || '#111'
+              const fontSize = (s.fontSize || 16) * (W/720)
+              ctx.font = `${fontSize}px sans-serif`
+              ctx.fillText(s.text || '', x, y + (fontSize || 16))
+            }
+          }
+          for(const s of tpl.templateData.shapes) drawShape(s)
+        }
+      }).catch(()=>{})
+    }catch(e){}
+  }, [])
+
   const drawing = useRef(false)
   const last = useRef(null)
   function getPos(e){

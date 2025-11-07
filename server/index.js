@@ -102,12 +102,29 @@ app.post('/api/rooms', async (req, res) => {
   // in production verify token; here we accept and create
   const roomId = makeRoomId()
   try{
+    const template = req.body && req.body.template ? req.body.template : null
     if (RoomModel) {
-      await RoomModel.create({ id: roomId, participants: [] })
+      await RoomModel.create({ id: roomId, participants: [], template })
     } else {
-      ROOMS.set(roomId, { id: roomId, participants: [] })
+      ROOMS.set(roomId, { id: roomId, participants: [], template })
     }
     res.json({ roomId })
+  }catch(err){ console.error(err); res.status(500).json({ message: 'error' }) }
+})
+
+// Read room metadata
+app.get('/api/rooms/:id', async (req, res) => {
+  const { id } = req.params
+  try{
+    if (RoomModel) {
+      const r = await RoomModel.findOne({ id })
+      if (!r) return res.status(404).json({ message: 'not found' })
+      return res.json({ id: r.id, participants: r.participants || [], template: r.template || null })
+    } else {
+      const r = ROOMS.get(id)
+      if (!r) return res.status(404).json({ message: 'not found' })
+      return res.json(r)
+    }
   }catch(err){ console.error(err); res.status(500).json({ message: 'error' }) }
 })
 
