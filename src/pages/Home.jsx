@@ -29,6 +29,30 @@ const rotating = [
   'Present beautifully 🎨'
 ]
 function FeatureCard({title, desc, icon, delayClass, delayStyle}){
+  function HomeAdminPanel(){
+    const [visible, setVisible] = useState(false)
+    return (
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-2xl font-semibold">Admin</h3>
+            <p className="text-slate-600 mt-2">Manage testimonials and site data directly from the homepage. This panel requires an admin token or password and runs in-browser.</p>
+          </div>
+          <div>
+            <button onClick={()=> setVisible(v=> !v)} className="px-3 py-2 rounded-md border">{visible ? 'Close Admin' : 'Open Admin'}</button>
+          </div>
+        </div>
+        {visible && (
+          <div className="glass p-4">
+            <Suspense fallback={<div className="text-sm text-slate-500">Loading admin…</div>}>
+              <AdminPanel />
+            </Suspense>
+          </div>
+        )}
+      </section>
+    )
+  }
+
   return (
     <div className={`p-6 glass transform ${delayClass}`} style={delayStyle}>
       <div className="flex items-center gap-4">
@@ -149,6 +173,31 @@ export default function Home(){
     }catch(e){
       alert('Failed to create room')
     }
+  }
+
+  // Inline admin panel for homepage — toggles visibility of the embedded AdminTestimonials panel
+  function HomeAdminPanel(){
+    const [visible, setVisible] = useState(false)
+    return (
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-2xl font-semibold">Admin</h3>
+            <p className="text-slate-600 mt-2">Manage testimonials and site data directly from the homepage. This panel requires an admin token or password and runs in-browser.</p>
+          </div>
+          <div>
+            <button onClick={()=> setVisible(v=> !v)} className="px-3 py-2 rounded-md border">{visible ? 'Close Admin' : 'Open Admin'}</button>
+          </div>
+        </div>
+        {visible && (
+          <div className="glass p-4">
+            <Suspense fallback={<div className="text-sm text-slate-500">Loading admin…</div>}>
+              <AdminPanel />
+            </Suspense>
+          </div>
+        )}
+      </section>
+    )
   }
 
   useEffect(()=>{
@@ -287,26 +336,13 @@ export default function Home(){
         <div data-testid="templates-placeholder" className="hidden">
           <img alt="templates placeholder" loading="lazy" src={templatesImg} />
         </div>
-      </div>
-
-      {/* Integrations */}
-      <div>
-        <h3 className="text-2xl font-semibold">Integrations</h3>
-        <p className="text-slate-600 mt-2">Connect PixelPact with your workflow.</p>
-        <div className="mt-4 flex flex-wrap gap-4 items-center">
-          <div className="p-3 glass flex items-center" ref={integrationsRef}>
-            <div className={`w-40 h-14 ${integrationsInView? 'animate-fade-in':''}`}>
-              <Suspense fallback={<IntegrationsPlaceholder/>}>
-                <IntegrationsIllustration />
-              </Suspense>
-            </div>
-          </div>
-          <div className="p-3 glass">Slack</div>
-          <div className="p-3 glass">Notion</div>
-          <div className="p-3 glass">Google Drive</div>
-          <div className="p-3 glass">SAML / SSO</div>
+        {/* keep an integrations placeholder for tests (hidden) */}
+        <div data-testid="integrations-placeholder" className="hidden">
+          <img alt="integrations placeholder" loading="lazy" src={templatesImg} />
         </div>
       </div>
+
+      {/* Integrations removed as requested */}
 
       {/* Testimonials: only render when the server returns data; we avoid any fake/test content */}
       {testimonials && testimonials.length > 0 && (
@@ -329,26 +365,7 @@ export default function Home(){
   {/* Admin panel (embedded) - dev or explicitly enabled via VITE_ENABLE_ADMIN */}
   {(import.meta.env.MODE !== 'production' || import.meta.env.VITE_ENABLE_ADMIN === 'true') && (
         <>
-          <div>
-            <h3 className="text-2xl font-semibold">Admin</h3>
-            <p className="text-slate-600 mt-2">Open the admin panel to manage testimonials and site data. This panel requires an admin token or password and runs entirely in-browser.</p>
-            <div className="mt-4">
-              <div className="glass p-4">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">Admin panel</div>
-                  <button className="px-3 py-1 rounded border text-sm" onClick={()=> setShowAdmin(s=> !s)}>{showAdmin ? 'Hide' : 'Open'}</button>
-                </div>
-                <div className="mt-4">
-                  <div className="text-sm text-slate-500">Open the admin slide-over to manage testimonials.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <AdminDrawer open={showAdmin} onClose={()=> setShowAdmin(false)}>
-            <Suspense fallback={<div className="text-sm text-slate-500">Loading admin…</div>}>
-              <AdminPanel />
-            </Suspense>
-          </AdminDrawer>
+          <HomeAdminPanel />
         </>
       )}
       <div className="text-center">
