@@ -14,15 +14,20 @@ export default function Register(){
     e.preventDefault()
     setLoading(true)
     try{
+      // client-side validation
+      if (!name || !name.trim()) throw new Error('Please enter your name')
+      if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Please enter a valid email')
+      if (!password || password.length < 8) throw new Error('Password must be at least 8 characters')
+
       const res = await fetch('/api/auth/register', {
         method: 'POST',
+        credentials: 'include',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email, password, name })
       })
       if (!res.ok) throw new Error('Registration failed')
       const body = await res.json()
-      // token in body.token
-      localStorage.setItem('token', body.token)
+      // server sets httpOnly cookie and may return a roomId
       nav(`/board/${body.roomId || 'new'}`)
     }catch(err){
       toast.show(err.message || 'Registration failed', { type: 'error' })
