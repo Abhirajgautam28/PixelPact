@@ -16,8 +16,16 @@ describe('Auth + session flow', ()=>{
     const setCookie = res.headers['set-cookie']
     expect(setCookie).toBeTruthy()
 
-    // now create room using the same agent (cookies preserved)
-    const create = await agent.post('/api/rooms').send({})
+    // parse csrf-token cookie and include as header for double-submit validation
+    const cookies = res.headers['set-cookie'] || []
+    let csrf = null
+    for (const c of cookies){
+      const m = c.match(/csrf-token=([^;]+)/)
+      if (m) { csrf = decodeURIComponent(m[1]); break }
+    }
+    const req = agent.post('/api/rooms')
+    if (csrf) req.set('X-CSRF-Token', csrf)
+    const create = await req.send({})
     expect(create.status).toBe(200)
     expect(create.body && create.body.roomId).toBeTruthy()
   })

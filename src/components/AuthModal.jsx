@@ -18,10 +18,13 @@ export default function AuthModal({ open, onClose, onSuccess }){
     try{
       const url = tab === 'login' ? '/api/auth/login' : '/api/auth/register'
       const payload = tab === 'login' ? { email, password } : { email, password, name }
+      const headers = { 'Content-Type': 'application/json' }
+      // include CSRF header when present (register/login don't require it but harmless)
+      try{ const t = (await import('../utils/csrf')).getCsrfToken(); if (t) headers['X-CSRF-Token'] = t }catch(e){}
       const res = await fetch(url, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload)
       })
       const body = await res.json()
