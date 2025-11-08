@@ -138,10 +138,13 @@ export default function Home(){
 
   async function createRoom(){
     try{
+      // attach CSRF header from cookie
+      const headers = { 'Content-Type': 'application/json' }
+      try{ const t = (await import('../utils/csrf')).getCsrfToken(); if (t) headers['X-CSRF-Token'] = t }catch(e){}
       const resp = await fetch('/api/rooms', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({})
       })
       if (resp.status === 401 || resp.status === 403){

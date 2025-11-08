@@ -9,6 +9,7 @@ import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
+import crypto from 'crypto'
 
 dotenv.config()
 
@@ -50,6 +51,14 @@ function setAuthCookie(res, token){
   res.cookie('token', token, { httpOnly: true, secure, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 })
 }
 
+function setCsrfCookie(res){
+  // generate a random CSRF token and set as non-HttpOnly cookie so client JS can read
+  const csrf = crypto.randomBytes(24).toString('hex')
+  const secure = process.env.NODE_ENV === 'production'
+  res.cookie('csrf-token', csrf, { httpOnly: false, secure, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 })
+  return csrf
+}
+
 // helper to extract token from header or cookie
 function extractToken(req){
   const authHeader = (req.headers && (req.headers.authorization || req.headers.Authorization)) || ''
@@ -66,6 +75,38 @@ function extractToken(req){
   return null
 }
 
+// CSRF protection middleware: double-submit cookie
+function csrfCheck(req, res, next){
+  // only enforce on state-changing methods
+  if (!['POST','PUT','DELETE','PATCH'].includes(req.method)) return next()
+    // Skip CSRF for auth endpoints (they set the token), admin endpoints, or when an Authorization/token header is present
+    // Tests and API clients may use Authorization or token headers (legacy admin flow) which shouldn't be blocked by double-submit CSRF
+    if (
+      req.path.startsWith('/api/auth') ||
+      req.path.startsWith('/api/auth/oauth') ||
+      req.path.startsWith('/api/admin') ||
+      req.headers.authorization ||
+      req.headers['token']
+    ) return next()
+  // read cookie and header
+  const cookie = req.headers && req.headers.cookie
+  // If there's no session cookie (token=...), then this is an unauthenticated API call
+  // and should be allowed through so downstream auth middleware can return 401.
+  if (!cookie || !cookie.includes('token=')) return next()
+  let cookieVal = null
+  if (cookie){
+    const m = cookie.match(/(?:^|; )csrf-token=([^;]+)/)
+    if (m) cookieVal = decodeURIComponent(m[1])
+  }
+  const headerVal = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'] || null
+  if (!cookieVal || !headerVal || cookieVal !== headerVal){
+    return res.status(403).json({ message: 'csrf_mismatch' })
+  }
+  return next()
+}
+
+app.use(csrfCheck)
+
 // Register
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, name } = req.body
@@ -76,17 +117,19 @@ app.post('/api/auth/register', async (req, res) => {
       const existing = await UserModel.findOne({ email })
       if (existing) return res.status(409).json({ message: 'exists' })
       const u = await UserModel.create({ email, password: hashed, name })
-      const token = jwt.sign({ id: u._id, email }, JWT_SECRET, { expiresIn: '7d' })
-      // set httpOnly cookie
-      setAuthCookie(res, token)
+  const token = jwt.sign({ id: u._id, email }, JWT_SECRET, { expiresIn: '7d' })
+  // set httpOnly cookie and csrf cookie
+  setAuthCookie(res, token)
+  setCsrfCookie(res)
       const roomId = makeRoomId()
       await RoomModel.create({ id: roomId, participants: [email] })
       return res.json({ roomId })
     } else {
       if (USERS.has(email)) return res.status(409).json({ message: 'exists' })
       USERS.set(email, { email, password: hashed, name })
-      const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '7d' })
-      setAuthCookie(res, token)
+  const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '7d' })
+  setAuthCookie(res, token)
+  setCsrfCookie(res)
       const roomId = makeRoomId()
       ROOMS.set(roomId, { id: roomId, participants: [email] })
       return res.json({ roomId })
@@ -106,8 +149,9 @@ app.post('/api/auth/login', async (req, res) => {
       if (!u) return res.status(401).json({ message: 'invalid' })
       const ok = await bcrypt.compare(password, u.password)
       if (!ok) return res.status(401).json({ message: 'invalid' })
-      const token = jwt.sign({ id: u._id, email }, JWT_SECRET, { expiresIn: '7d' })
-      setAuthCookie(res, token)
+  const token = jwt.sign({ id: u._id, email }, JWT_SECRET, { expiresIn: '7d' })
+  setAuthCookie(res, token)
+  setCsrfCookie(res)
       const room = await RoomModel.findOne() // naive
       return res.json({ roomId: room?.id || null })
     } else {
@@ -115,8 +159,9 @@ app.post('/api/auth/login', async (req, res) => {
       if (!u) return res.status(401).json({ message: 'invalid' })
       const ok = await bcrypt.compare(password, u.password)
       if (!ok) return res.status(401).json({ message: 'invalid' })
-      const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '7d' })
-      setAuthCookie(res, token)
+  const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '7d' })
+  setAuthCookie(res, token)
+  setCsrfCookie(res)
       const roomId = Array.from(ROOMS.keys())[0] || null
       return res.json({ roomId })
     }
@@ -175,6 +220,27 @@ app.get('/api/testimonials', (req, res) => {
   }
 })
 
+// Return current authenticated user (if any)
+app.get('/api/auth/me', (req, res) => {
+  try{
+    const token = extractToken(req)
+    if (!token) return res.json({ user: null })
+    try{
+      const payload = jwt.verify(token, JWT_SECRET)
+      // minimal user info
+      return res.json({ user: { id: payload.id || null, email: payload.email || null } })
+    }catch(e){ return res.json({ user: null }) }
+  }catch(err){ return res.status(500).json({ user: null }) }
+})
+
+// Logout: clear auth + csrf cookies
+app.post('/api/auth/logout', (req, res) => {
+  const secure = process.env.NODE_ENV === 'production'
+  res.clearCookie('token', { httpOnly: true, secure, sameSite: 'lax' })
+  res.clearCookie('csrf-token', { secure, sameSite: 'lax' })
+  return res.json({ ok: true })
+})
+
 // Admin-protected endpoints to modify testimonials.
 // Admin authentication: supports legacy shared token or JWT issued via /api/admin/login
 function checkAdmin(req){
@@ -217,6 +283,50 @@ app.get('/api/auth/oauth/:provider', (req, res) => {
     return res.redirect(url)
   }
   return res.status(501).json({ message: 'provider_not_supported' })
+})
+
+// OAuth callback for Google
+app.get('/api/auth/oauth/google/callback', async (req, res) => {
+  const code = req.query.code
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
+  const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT || `${req.protocol}://${req.get('host')}/api/auth/oauth/google/callback`
+  if (!clientId || !clientSecret) return res.status(501).send('Google OAuth not configured')
+  if (!code) return res.status(400).send('Missing code')
+  try{
+    // exchange code for tokens
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' })
+    })
+    const tokenJson = await tokenRes.json()
+    if (!tokenJson.access_token) return res.status(400).send('Token exchange failed')
+    // fetch profile
+    const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${tokenJson.access_token}` } })
+    const profile = await profileRes.json()
+    const email = profile && profile.email
+    if (!email) return res.status(400).send('No email in profile')
+    // create or find user
+    if (UserModel){
+      let u = await UserModel.findOne({ email })
+      if (!u) u = await UserModel.create({ email, name: profile.name || '' })
+      const token = jwt.sign({ id: u._id, email }, JWT_SECRET, { expiresIn: '7d' })
+      setAuthCookie(res, token)
+      setCsrfCookie(res)
+    } else {
+      if (!USERS.has(email)) USERS.set(email, { email, name: profile.name || '' })
+      const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '7d' })
+      setAuthCookie(res, token)
+      setCsrfCookie(res)
+    }
+    // redirect back to frontend
+    const redirectTo = process.env.OAUTH_SUCCESS_REDIRECT || FRONTEND_ORIGIN
+    return res.redirect(redirectTo)
+  }catch(err){
+    console.error('OAuth callback error', err)
+    return res.status(500).send('OAuth error')
+  }
 })
 
 // basic sanitizer + validator
