@@ -16,7 +16,8 @@ const app = express()
 const server = http.createServer(app)
 const io = new Server(server, { cors: { origin: '*' }, path: '/socket' })
 
-app.use(cors())
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
+app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }))
 app.use(bodyParser.json())
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
@@ -43,6 +44,28 @@ const ROOMS = new Map()
 
 function makeRoomId(){ return `room-${Math.random().toString(36).slice(2,9)}` }
 
+// helper to set httpOnly auth cookie
+function setAuthCookie(res, token){
+  const secure = process.env.NODE_ENV === 'production'
+  res.cookie('token', token, { httpOnly: true, secure, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 })
+}
+
+// helper to extract token from header or cookie
+function extractToken(req){
+  const authHeader = (req.headers && (req.headers.authorization || req.headers.Authorization)) || ''
+  const m = authHeader.match(/^Bearer\s+(.+)$/i)
+  if (m) return m[1]
+  // check custom header 'token'
+  if (req.headers && req.headers.token) return req.headers.token
+  // parse cookie header if present
+  const cookie = req.headers && req.headers.cookie
+  if (cookie){
+    const match = cookie.match(/(?:^|; )token=([^;]+)/)
+    if (match) return decodeURIComponent(match[1])
+  }
+  return null
+}
+
 // Register
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, name } = req.body
@@ -54,16 +77,19 @@ app.post('/api/auth/register', async (req, res) => {
       if (existing) return res.status(409).json({ message: 'exists' })
       const u = await UserModel.create({ email, password: hashed, name })
       const token = jwt.sign({ id: u._id, email }, JWT_SECRET, { expiresIn: '7d' })
+      // set httpOnly cookie
+      setAuthCookie(res, token)
       const roomId = makeRoomId()
       await RoomModel.create({ id: roomId, participants: [email] })
-      return res.json({ token, roomId })
+      return res.json({ roomId })
     } else {
       if (USERS.has(email)) return res.status(409).json({ message: 'exists' })
       USERS.set(email, { email, password: hashed, name })
       const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '7d' })
+      setAuthCookie(res, token)
       const roomId = makeRoomId()
       ROOMS.set(roomId, { id: roomId, participants: [email] })
-      return res.json({ token, roomId })
+      return res.json({ roomId })
     }
   }catch(err){
     console.error(err)
@@ -81,16 +107,18 @@ app.post('/api/auth/login', async (req, res) => {
       const ok = await bcrypt.compare(password, u.password)
       if (!ok) return res.status(401).json({ message: 'invalid' })
       const token = jwt.sign({ id: u._id, email }, JWT_SECRET, { expiresIn: '7d' })
+      setAuthCookie(res, token)
       const room = await RoomModel.findOne() // naive
-      return res.json({ token, roomId: room?.id || null })
+      return res.json({ roomId: room?.id || null })
     } else {
       const u = USERS.get(email)
       if (!u) return res.status(401).json({ message: 'invalid' })
       const ok = await bcrypt.compare(password, u.password)
       if (!ok) return res.status(401).json({ message: 'invalid' })
       const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '7d' })
+      setAuthCookie(res, token)
       const roomId = Array.from(ROOMS.keys())[0] || null
-      return res.json({ token, roomId })
+      return res.json({ roomId })
     }
   }catch(err){
     console.error(err)
@@ -100,7 +128,8 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Create a room endpoint
 app.post('/api/rooms', async (req, res) => {
-  const { token } = req.headers
+  // extract token from cookie/header if present
+  const token = extractToken(req)
   // in production verify token; here we accept and create
   const roomId = makeRoomId()
   try{
@@ -152,19 +181,16 @@ function checkAdmin(req){
   const authHeader = (req.headers && (req.headers.authorization || req.headers.Authorization)) || ''
   const expectedToken = process.env.ADMIN_TOKEN || 'dev-admin-token'
   const jwtSecret = process.env.ADMIN_JWT_SECRET || 'dev-jwt-secret'
-
   // Legacy direct token match (kept for backward compatibility)
   if (authHeader === expectedToken || authHeader === `Bearer ${expectedToken}`) return true
 
-  // Bearer JWT: verify and require role: 'admin'
-  const m = authHeader.match(/^Bearer\s+(.+)$/i)
-  if (m){
-    const token = m[1]
-    try{
-      const payload = jwt.verify(token, jwtSecret)
-      if (payload && payload.role === 'admin') return true
-    }catch(e){ /* invalid token */ }
-  }
+  // Try to extract token from header or cookie
+  const token = extractToken(req)
+  if (!token) return false
+  try{
+    const payload = jwt.verify(token, jwtSecret)
+    if (payload && payload.role === 'admin') return true
+  }catch(e){ /* invalid token */ }
   return false
 }
 
@@ -176,6 +202,21 @@ app.post('/api/admin/login', (req, res) => {
   if (!password || password !== adminPassword) return res.status(401).json({ message: 'invalid' })
   const token = jwt.sign({ role: 'admin' }, jwtSecret, { expiresIn: '7d' })
   return res.json({ token })
+})
+
+// OAuth placeholder endpoint — redirect to provider if configured, otherwise 501
+app.get('/api/auth/oauth/:provider', (req, res) => {
+  const { provider } = req.params
+  // Example: support 'google' when env vars are present (very minimal flow)
+  if (provider === 'google'){
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID
+    const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT || `${req.protocol}://${req.get('host')}/api/auth/oauth/google/callback`
+    if (!clientId) return res.status(501).json({ message: 'not_configured' })
+    const scope = encodeURIComponent('profile email')
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&response_type=code&scope=${scope}&redirect_uri=${encodeURIComponent(redirectUri)}`
+    return res.redirect(url)
+  }
+  return res.status(501).json({ message: 'provider_not_supported' })
 })
 
 // basic sanitizer + validator

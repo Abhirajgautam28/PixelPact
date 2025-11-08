@@ -137,18 +137,18 @@ export default function Home(){
   }
 
   async function createRoom(){
-    // If no token present, show auth modal first
-    const token = localStorage.getItem('token')
-    if (!token){
-      setShowAuth(true)
-      return
-    }
     try{
       const resp = await fetch('/api/rooms', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
       })
+      if (resp.status === 401 || resp.status === 403){
+        // not authenticated: show auth modal
+        setShowAuth(true)
+        return
+      }
       const body = await resp.json()
       const roomId = body.roomId || body.id || body.room || null
       if(roomId){
