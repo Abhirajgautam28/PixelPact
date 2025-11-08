@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useToast } from '../components/ToastContext'
 import useStaggeredInView from '../hooks/useStaggeredInView'
 
 function Field({label, value, onChange}){
@@ -12,6 +13,7 @@ function Field({label, value, onChange}){
 
 export default function AdminTestimonials(){
   const [ref, inView, getDelayProps] = useStaggeredInView({threshold: 0.1})
+  const toast = useToast()
   const [testimonials, setTestimonials] = useState([])
   const [loading, setLoading] = useState(true)
   const [authToken, setAuthToken] = useState(() => sessionStorage.getItem('adminToken') || '')
@@ -45,7 +47,7 @@ export default function AdminTestimonials(){
   }
 
   async function attemptLogin(){
-    if (!passphrase) return alert('Enter admin password or token')
+    if (!passphrase){ toast.show('Enter admin password or token', { type: 'error' }); return }
     try{
       // Try password exchange first
       const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: passphrase }) })
@@ -62,7 +64,7 @@ export default function AdminTestimonials(){
       setPassphrase('')
     }catch(e){
       console.warn('Login error', e)
-      alert('Login failed')
+      toast.show('Login failed', { type: 'error' })
     }
   }
 
@@ -72,7 +74,7 @@ export default function AdminTestimonials(){
       if (!res.ok) throw new Error('failed')
       const body = await res.json()
       setTestimonials(body)
-    }catch(e){ alert('Failed to add testimonial (check admin token)') }
+    }catch(e){ toast.show('Failed to add testimonial (check admin token)', { type: 'error' }) }
   }
 
   async function updateTestimonial(idx, t){
@@ -81,17 +83,16 @@ export default function AdminTestimonials(){
       if (!res.ok) throw new Error('failed')
       const body = await res.json()
       setTestimonials(body)
-    }catch(e){ alert('Failed to update testimonial (check admin token)') }
+    }catch(e){ toast.show('Failed to update testimonial (check admin token)', { type: 'error' }) }
   }
 
   async function removeTestimonial(idx){
-    if (!confirm('Remove testimonial?')) return
     try{
       const res = await fetch(`/api/testimonials/${idx}`, { method: 'DELETE', headers: { 'Authorization': authToken } })
       if (!res.ok) throw new Error('failed')
       const body = await res.json()
       setTestimonials(body)
-    }catch(e){ alert('Failed to remove testimonial (check admin token)') }
+    }catch(e){ toast.show('Failed to remove testimonial (check admin token)', { type: 'error' }) }
   }
 
   return (
@@ -140,15 +141,16 @@ export default function AdminTestimonials(){
   )
 }
 
-function AddForm({onAdd}){
+  function AddForm({onAdd}){
+  const toast = useToast()
   const [name, setName] = useState('')
   const [role, setRole] = useState('')
   const [text, setText] = useState('')
 
   function submit(e){
     e.preventDefault()
-    if (!name || !role || !text) return alert('Fill all fields')
-    onAdd({ name, role, text })
+      if (!name || !role || !text){ toast.show('Fill all fields', { type: 'error' }); return }
+      onAdd({ name, role, text })
     setName(''); setRole(''); setText('')
   }
 
@@ -172,6 +174,9 @@ function InlineEditor({index, testimonial, onSave, onDelete}){
   const [name, setName] = useState(testimonial.name || '')
   const [role, setRole] = useState(testimonial.role || '')
   const [text, setText] = useState(testimonial.text || '')
+  const [confirming, setConfirming] = useState(false)
+
+  const toast = useToast()
 
   useEffect(()=>{
     setName(testimonial.name || '')
@@ -179,11 +184,11 @@ function InlineEditor({index, testimonial, onSave, onDelete}){
     setText(testimonial.text || '')
   }, [testimonial])
 
-  function save(){
-    if (!name.trim() || !text.trim()) return alert('Name and text required')
-    onSave({ name: name.trim(), role: role.trim(), text: text.trim() })
-    setEditing(false)
-  }
+    function save(){
+      if (!name.trim() || !text.trim()){ toast.show('Name and text required', { type: 'error' }); return }
+      onSave({ name: name.trim(), role: role.trim(), text: text.trim() })
+      setEditing(false)
+    }
 
   return (
     <div>
@@ -193,10 +198,18 @@ function InlineEditor({index, testimonial, onSave, onDelete}){
             <div className="font-semibold">{testimonial.name} <span className="text-xs text-slate-500">• {testimonial.role}</span></div>
             <div className="text-sm text-slate-700 mt-2">{testimonial.text}</div>
           </div>
-          <div className="ml-4 flex flex-col gap-2">
-            <button className="px-2 py-1 text-sm border rounded" onClick={()=> setEditing(true)}>Edit</button>
-            <button className="px-2 py-1 text-sm bg-red-50 text-red-700 rounded" onClick={onDelete}>Delete</button>
-          </div>
+            <div className="ml-4 flex flex-col gap-2">
+              <button className="px-2 py-1 text-sm border rounded" onClick={()=> setEditing(true)}>Edit</button>
+              {!confirming && (
+                <button className="px-2 py-1 text-sm bg-red-50 text-red-700 rounded" onClick={()=> setConfirming(true)}>Delete</button>
+              )}
+              {confirming && (
+                <div className="flex gap-2">
+                  <button className="px-2 py-1 text-sm bg-red-600 text-white rounded" onClick={()=> { onDelete(); setConfirming(false) }}>Confirm</button>
+                  <button className="px-2 py-1 text-sm border rounded" onClick={()=> setConfirming(false)}>Cancel</button>
+                </div>
+              )}
+            </div>
         </div>
       )}
       {editing && (

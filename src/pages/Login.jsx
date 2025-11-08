@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useToast } from '../components/ToastContext'
 import { useNavigate, Link } from 'react-router-dom'
 
 export default function Login(){
@@ -6,6 +7,7 @@ export default function Login(){
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const nav = useNavigate()
+  const toast = useToast()
 
   async function submit(e){
     e.preventDefault()
@@ -21,7 +23,7 @@ export default function Login(){
       localStorage.setItem('token', body.token)
       nav(`/board/${body.roomId || 'new'}`)
     }catch(err){
-      alert(err.message)
+      toast.show(err.message || 'Login failed', { type: 'error' })
     }finally{ setLoading(false) }
   }
 
@@ -39,3 +41,5 @@ export default function Login(){
     </div>
   )
 }
+
+// no helper required; toast is provided via hook above

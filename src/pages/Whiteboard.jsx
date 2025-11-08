@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { useToast } from '../components/ToastContext'
 import { io } from 'socket.io-client'
 
 export default function Whiteboard(){
   const canvasRef = useRef(null)
+  const toast = useToast()
   const [socket, setSocket] = useState(null)
   const [connected, setConnected] = useState(false)
   const [presence, setPresence] = useState([])
@@ -185,7 +187,7 @@ export default function Whiteboard(){
       const body = await inv.json()
       setInviteLink(body.url)
       setInviteOpen(true)
-    }catch(err){ alert('Invite failed') }
+  }catch(err){ toast.show('Invite failed', { type: 'error' }) }
   }
 
   return (
@@ -215,7 +217,7 @@ export default function Whiteboard(){
               <input readOnly value={inviteLink} className="w-full p-2 border rounded" />
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={()=> { navigator.clipboard?.writeText(inviteLink); alert('copied') }} className="px-3 py-1 bg-slate-100 rounded">Copy</button>
+              <button onClick={()=> { navigator.clipboard?.writeText(inviteLink); toast.show('Copied invite link') }} className="px-3 py-1 bg-slate-100 rounded">Copy</button>
               <button onClick={()=> setInviteOpen(false)} className="px-3 py-1 bg-slate-200 rounded">Close</button>
             </div>
           </div>
