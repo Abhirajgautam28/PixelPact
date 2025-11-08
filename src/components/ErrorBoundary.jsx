@@ -1,4 +1,5 @@
 import React from 'react'
+import { logUnhandledError } from '../utils/errorLogger'
 
 export default class ErrorBoundary extends React.Component {
   constructor(props){
@@ -16,10 +17,8 @@ export default class ErrorBoundary extends React.Component {
     // eslint-disable-next-line no-console
     console.error('Uncaught error in component tree:', error, info)
     try{
-      // dynamic import the logger so we don't break in tests or node
-      import('../utils/errorLogger').then(mod => {
-        try{ mod.logUnhandledError(error, { componentStack: info?.componentStack }) }catch(e){}
-      }).catch(()=>{})
+      // static import is safe because the logger guards for non-browser envs
+      try{ logUnhandledError(error, { componentStack: info?.componentStack }) }catch(e){}
     }catch(e){/* ignore */}
   }
 
