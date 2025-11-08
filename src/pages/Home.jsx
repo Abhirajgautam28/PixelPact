@@ -18,9 +18,7 @@ import tpl4 from '../assets/images/placeholders/template-4.svg'
 import tpl5 from '../assets/images/placeholders/template-5.svg'
 import tpl6 from '../assets/images/placeholders/template-6.svg'
 import PreviewModal from '../components/PreviewModal'
-import AdminDrawer from '../components/AdminDrawer'
-
-const AdminPanel = lazy(()=> import('./AdminTestimonials'))
+import AdminModal from '../components/AdminModal'
 
 const rotating = [
   'Sketch together ✏️',
@@ -29,29 +27,7 @@ const rotating = [
   'Present beautifully 🎨'
 ]
 function FeatureCard({title, desc, icon, delayClass, delayStyle}){
-  function HomeAdminPanel(){
-    const [visible, setVisible] = useState(false)
-    return (
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-2xl font-semibold">Admin</h3>
-            <p className="text-slate-600 mt-2">Manage testimonials and site data directly from the homepage. This panel requires an admin token or password and runs in-browser.</p>
-          </div>
-          <div>
-            <button onClick={()=> setVisible(v=> !v)} className="px-3 py-2 rounded-md border">{visible ? 'Close Admin' : 'Open Admin'}</button>
-          </div>
-        </div>
-        {visible && (
-          <div className="glass p-4">
-            <Suspense fallback={<div className="text-sm text-slate-500">Loading admin…</div>}>
-              <AdminPanel />
-            </Suspense>
-          </div>
-        )}
-      </section>
-    )
-  }
+  
 
   return (
     <div className={`p-6 glass transform ${delayClass}`} style={delayStyle}>
@@ -175,30 +151,7 @@ export default function Home(){
     }
   }
 
-  // Inline admin panel for homepage — toggles visibility of the embedded AdminTestimonials panel
-  function HomeAdminPanel(){
-    const [visible, setVisible] = useState(false)
-    return (
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-2xl font-semibold">Admin</h3>
-            <p className="text-slate-600 mt-2">Manage testimonials and site data directly from the homepage. This panel requires an admin token or password and runs in-browser.</p>
-          </div>
-          <div>
-            <button onClick={()=> setVisible(v=> !v)} className="px-3 py-2 rounded-md border">{visible ? 'Close Admin' : 'Open Admin'}</button>
-          </div>
-        </div>
-        {visible && (
-          <div className="glass p-4">
-            <Suspense fallback={<div className="text-sm text-slate-500">Loading admin…</div>}>
-              <AdminPanel />
-            </Suspense>
-          </div>
-        )}
-      </section>
-    )
-  }
+  
 
   useEffect(()=>{
     // generate WebP previews for each template from the SVG thumbnails
@@ -363,10 +316,8 @@ export default function Home(){
 
       {/* CTA */}
   {/* Admin panel (embedded) - dev or explicitly enabled via VITE_ENABLE_ADMIN */}
-  {(import.meta.env.MODE !== 'production' || import.meta.env.VITE_ENABLE_ADMIN === 'true') && (
-        <>
-          <HomeAdminPanel />
-        </>
+      {(import.meta.env.MODE !== 'production' || import.meta.env.VITE_ENABLE_ADMIN === 'true') && (
+        <AdminModal />
       )}
       <div className="text-center">
         <h3 className="text-2xl font-semibold">Ready to create together?</h3>
