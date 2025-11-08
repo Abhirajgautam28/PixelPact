@@ -239,6 +239,32 @@ app.delete('/api/testimonials/:idx', (req, res) => {
   }catch(err){ console.error(err); return res.status(500).json({ message: 'error' }) }
 })
 
+// Client-side error/log ingest (lightweight)
+app.post('/api/logs', (req, res) => {
+  try{
+    const body = req.body || {}
+    const entry = {
+      time: new Date().toISOString(),
+      level: body.level || 'info',
+      message: sanitizeString(body.message || '', 2000),
+      extra: body.extra || null
+    }
+    const p = path.resolve(process.cwd(), 'server', 'logs.json')
+    let arr = []
+    if (fs.existsSync(p)){
+      try{ arr = JSON.parse(fs.readFileSync(p, 'utf8') || '[]') }catch(e){ arr = [] }
+    }
+    arr.push(entry)
+    try{ fs.writeFileSync(p, JSON.stringify(arr, null, 2), 'utf8') }catch(e){ /* swallow */ }
+    // Also echo to console for server operators
+    console.log('[client-log]', entry.level, entry.message)
+    return res.json({ ok: true })
+  }catch(err){
+    console.error('Failed to ingest client log', err)
+    return res.status(500).json({ ok: false })
+  }
+})
+
 // Invite: generate a simple share token (stateless JWT)
 app.post('/api/rooms/:id/invite', (req, res)=>{
   const { id } = req.params
