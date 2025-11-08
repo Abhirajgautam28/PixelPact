@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useToast } from '../components/ToastContext'
 import { useNavigate, Link } from 'react-router-dom'
 
 export default function Register(){
@@ -7,6 +8,7 @@ export default function Register(){
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const nav = useNavigate()
+  const toast = useToast()
 
   async function submit(e){
     e.preventDefault()
@@ -23,7 +25,7 @@ export default function Register(){
       localStorage.setItem('token', body.token)
       nav(`/board/${body.roomId || 'new'}`)
     }catch(err){
-      alert(err.message)
+      toast.show(err.message || 'Registration failed', { type: 'error' })
     }finally{ setLoading(false) }
   }
 
@@ -42,3 +44,5 @@ export default function Register(){
     </div>
   )
 }
+
+// toast is available via hook above

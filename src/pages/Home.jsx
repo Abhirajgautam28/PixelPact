@@ -10,6 +10,7 @@ import useStaggeredInView from '../hooks/useStaggeredInView'
 const LottiePlayer = lazy(()=> import('../components/LottiePlayer'))
 import miniAnim from '../assets/lottie/mini.json'
 import { Link, useNavigate } from 'react-router-dom'
+import { useToast } from '../components/ToastContext'
 import templatesImg from '../assets/images/placeholders/templates.png'
 import tpl1 from '../assets/images/placeholders/template-1.svg'
 import tpl2 from '../assets/images/placeholders/template-2.svg'
@@ -107,6 +108,7 @@ export default function Home(){
   // previewSources holds generated webp data URLs keyed by template title
   const [previewSources, setPreviewSources] = useState({})
   const navigate = useNavigate()
+  const toast = useToast()
   const [showAdmin, setShowAdmin] = useState(false)
 
   async function openTemplateInEditor(template){
@@ -124,11 +126,11 @@ export default function Home(){
         navigate(`/board/${roomId}`)
       }else{
         setPreview(null)
-        alert('Failed to create room')
+        toast.show('Failed to create room', { type: 'error' })
       }
     }catch(e){
       setPreview(null)
-      alert('Failed to create room')
+      toast.show('Failed to create room', { type: 'error' })
     }
   }
 
@@ -144,10 +146,10 @@ export default function Home(){
       if(roomId){
         navigate(`/board/${roomId}`)
       }else{
-        alert('Failed to create room')
+        toast.show('Failed to create room', { type: 'error' })
       }
     }catch(e){
-      alert('Failed to create room')
+      toast.show('Failed to create room', { type: 'error' })
     }
   }
 
@@ -220,6 +222,8 @@ export default function Home(){
 
   return (
     <section className="space-y-12">
+      {/* ensure toast is available */}
+      {null}
       {/* Hero */}
   <div className="grid lg:grid-cols-2 gap-10 items-center">
   <div>
