@@ -239,10 +239,71 @@ app.delete('/api/testimonials/:idx', (req, res) => {
   }catch(err){ console.error(err); return res.status(500).json({ message: 'error' }) }
 })
 
-// Client-side log ingest removed for production hardening.
-// Previously this endpoint accepted client logs and persisted them to `server/logs.json`.
-// If you need lightweight client logging in the future, reintroduce a rate-limited
-// and size-capped ingestion endpoint here with appropriate auth and rotation.
+// Client-side log ingest (hardened)
+// This endpoint accepts lightweight client-side logs but enforces rate limits,
+// entry size caps, and a max number of stored entries to avoid unbounded
+// growth. Writes are atomic to reduce corruption risk.
+const LOG_MAX_ENTRIES = 1000
+const LOG_MAX_ENTRY_CHARS = 2000
+const LOG_RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
+const LOG_RATE_LIMIT_MAX = 10 // max entries per IP per window
+const LOG_RATE_LIMIT_MAP = new Map()
+
+function cleanupRateLimitMap(){
+  const now = Date.now()
+  for (const [ip, arr] of LOG_RATE_LIMIT_MAP.entries()){
+    const recent = arr.filter(t => now - t < LOG_RATE_LIMIT_WINDOW_MS)
+    if (recent.length === 0) LOG_RATE_LIMIT_MAP.delete(ip)
+    else LOG_RATE_LIMIT_MAP.set(ip, recent)
+  }
+}
+
+// Periodic cleanup to avoid memory leaks
+setInterval(cleanupRateLimitMap, LOG_RATE_LIMIT_WINDOW_MS * 5)
+
+app.post('/api/logs', (req, res) => {
+  try{
+    // identify client IP conservatively
+    const ip = (req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || 'unknown').toString()
+    const now = Date.now()
+    const arr = LOG_RATE_LIMIT_MAP.get(ip) || []
+    const recent = arr.filter(t => now - t < LOG_RATE_LIMIT_WINDOW_MS)
+    if (recent.length >= LOG_RATE_LIMIT_MAX) return res.status(429).json({ ok: false, message: 'rate_limited' })
+    recent.push(now)
+    LOG_RATE_LIMIT_MAP.set(ip, recent)
+
+    const body = req.body || {}
+    const message = sanitizeString(body.message || '', LOG_MAX_ENTRY_CHARS)
+    if (!message) return res.status(400).json({ ok: false, message: 'empty_message' })
+    const entry = {
+      time: new Date().toISOString(),
+      level: body.level || 'info',
+      message,
+      extra: body.extra || null
+    }
+
+    const p = path.resolve(process.cwd(), 'server', 'logs.json')
+    let stored = []
+    if (fs.existsSync(p)){
+      try{ stored = JSON.parse(fs.readFileSync(p, 'utf8') || '[]') }catch(e){ stored = [] }
+    }
+    stored.push(entry)
+    // enforce cap
+    if (stored.length > LOG_MAX_ENTRIES) stored = stored.slice(stored.length - LOG_MAX_ENTRIES)
+
+    // atomic write: write to temp file then rename
+    const tmp = p + '.tmp'
+    fs.writeFileSync(tmp, JSON.stringify(stored, null, 2), 'utf8')
+    fs.renameSync(tmp, p)
+
+    // echo a short preview to console for operators
+    console.log('[client-log]', entry.level, entry.message.substring(0, 120))
+    return res.json({ ok: true })
+  }catch(err){
+    console.error('Failed to ingest client log', err)
+    return res.status(500).json({ ok: false })
+  }
+})
 
 // Invite: generate a simple share token (stateless JWT)
 app.post('/api/rooms/:id/invite', (req, res)=>{
