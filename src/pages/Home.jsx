@@ -20,6 +20,7 @@ import tpl5 from '../assets/images/placeholders/template-5.svg'
 import tpl6 from '../assets/images/placeholders/template-6.svg'
 import PreviewModal from '../components/PreviewModal'
 import AdminModal from '../components/AdminModal'
+import AuthModal from '../components/AuthModal'
 
 const rotating = [
   'Sketch together ✏️',
@@ -110,6 +111,7 @@ export default function Home(){
   const navigate = useNavigate()
   const toast = useToast()
   const [showAdmin, setShowAdmin] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
 
   async function openTemplateInEditor(template){
     try{
@@ -135,10 +137,16 @@ export default function Home(){
   }
 
   async function createRoom(){
+    // If no token present, show auth modal first
+    const token = localStorage.getItem('token')
+    if (!token){
+      setShowAuth(true)
+      return
+    }
     try{
       const resp = await fetch('/api/rooms', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({})
       })
       const body = await resp.json()
@@ -323,6 +331,13 @@ export default function Home(){
       {(import.meta.env.MODE !== 'production' || import.meta.env.VITE_ENABLE_ADMIN === 'true') && (
         <AdminModal />
       )}
+      <AuthModal open={showAuth} onClose={()=> setShowAuth(false)} onSuccess={(roomId)=>{
+        setShowAuth(false)
+        // if the auth flow returned a roomId (created during registration) navigate to it
+        if (roomId) return navigate(`/board/${roomId}`)
+        // otherwise attempt to create a room now that we're authenticated
+        createRoom()
+      }} />
       <div className="text-center">
         <h3 className="text-2xl font-semibold">Ready to create together?</h3>
         <p className="text-slate-600 mt-2">Start a room in seconds — invite teammates, or try a demo session.</p>
