@@ -51,7 +51,7 @@ function Testimonial({name, role, text}){
   )
 }
 
-function TemplateCard({title, desc, img, tags, onPreview}){
+function TemplateCard({title, desc, img, tags, onPreview, onUse}){
   return (
     <article className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
       <div className="h-40 bg-slate-100 overflow-hidden">
@@ -65,7 +65,7 @@ function TemplateCard({title, desc, img, tags, onPreview}){
         </div>
         <div className="mt-4 flex items-center justify-between">
           <button onClick={onPreview} className="px-3 py-2 rounded-md bg-[#6C5CE7] text-white text-sm">Preview</button>
-          <button className="text-sm text-slate-500">Use template</button>
+          <button onClick={onUse} className="text-sm text-slate-500">Use template</button>
         </div>
       </div>
     </article>
@@ -128,6 +128,25 @@ export default function Home(){
       }
     }catch(e){
       setPreview(null)
+      alert('Failed to create room')
+    }
+  }
+
+  async function createRoom(){
+    try{
+      const resp = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+      const body = await resp.json()
+      const roomId = body.roomId || body.id || body.room || null
+      if(roomId){
+        navigate(`/board/${roomId}`)
+      }else{
+        alert('Failed to create room')
+      }
+    }catch(e){
       alert('Failed to create room')
     }
   }
@@ -212,8 +231,8 @@ export default function Home(){
             </div>
           </div>
 
-          <div className="mt-8 flex gap-4 items-center justify-start">
-            <button className="relative px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room 🚀
+            <div className="mt-8 flex gap-4 items-center justify-start">
+            <button onClick={()=> createRoom()} className="relative px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room 🚀
               <span className="absolute -right-3 -top-2 w-3 h-3 rounded-full bg-[#ff6b6b] animate-pulse" aria-hidden="true" />
             </button>
             <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Watch demo</Link>
@@ -335,8 +354,8 @@ export default function Home(){
       <div className="text-center">
         <h3 className="text-2xl font-semibold">Ready to create together?</h3>
         <p className="text-slate-600 mt-2">Start a room in seconds — invite teammates, or try a demo session.</p>
-        <div className="mt-6 flex items-center justify-center gap-4">
-          <button className="px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room</button>
+          <div className="mt-6 flex items-center justify-center gap-4">
+          <button onClick={()=> createRoom()} className="px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room</button>
           <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Launch demo</Link>
         </div>
       </div>
