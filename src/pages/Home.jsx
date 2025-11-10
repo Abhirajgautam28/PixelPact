@@ -30,7 +30,7 @@ const rotating = [
 ]
 function FeatureCard({title, desc, icon, delayClass, delayStyle}){
   return (
-  <div className={`p-5 bg-white rounded-lg shadow-md transform glass ${delayClass}`} style={delayStyle} role="article">
+  <div className={`p-5 bg-white rounded-lg shadow-elevation-1 transform glass ${delayClass}`} style={delayStyle} role="article">
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 rounded-full flex items-center justify-center bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">{icon}</div>
         <div>
@@ -44,7 +44,7 @@ function FeatureCard({title, desc, icon, delayClass, delayStyle}){
 
 function Testimonial({name, role, text}){
   return (
-    <figure className="p-4 bg-white rounded-lg shadow-sm">
+  <figure className="p-4 bg-white rounded-lg shadow-elevation-1">
       <blockquote className="text-sm text-slate-700">“{text}”</blockquote>
       <figcaption className="mt-3 text-sm font-semibold text-slate-900">{name} <span className="text-sm text-slate-500">• {role}</span></figcaption>
     </figure>

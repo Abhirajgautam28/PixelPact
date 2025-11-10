@@ -32,7 +32,7 @@ export default function AdminModal({ envMode = import.meta.env.MODE }){
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={()=> setOpen(false)} aria-hidden="true" />
           <div role="dialog" aria-modal="true" className="relative w-[min(900px,95%)] max-h-[85vh] overflow-auto modal-animate">
-            <div className="glass p-4">
+            <div className="glass p-4 shadow-elevation-1">
               <div className="flex items-start justify-between mb-3">
                 <h4 className="text-lg font-semibold">Site Admin</h4>
                 <button aria-label="Close admin" onClick={()=> setOpen(false)} className="px-2 py-1 rounded border">Close</button>

@@ -10,7 +10,7 @@ export default function Privacy(){
       </header>
 
       <section className="max-w-3xl mx-auto px-4">
-        <div className="glass p-6">
+  <div className="glass p-6 shadow-elevation-1">
           <div className="prose max-w-none text-slate-800">
             <h2 className="text-lg font-semibold">What we collect</h2>
             <p>Basic account details (name, email), content you upload, and aggregated usage data to operate and improve the service.</p>

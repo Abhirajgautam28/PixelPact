@@ -266,7 +266,7 @@ export default function Demo(){
       </div>
 
       <div className="mt-2">
-        <div className="glass p-4">
+  <div className="glass p-4 shadow-elevation-1">
           <Canvas />
         </div>
       </div>

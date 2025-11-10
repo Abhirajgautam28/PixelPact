@@ -39,7 +39,7 @@ export default function Login(){
         <p className="mt-2 text-slate-600">Welcome back — sign in to continue to your rooms and boards.</p>
       </header>
 
-      <section className="max-w-md mx-auto glass p-6">
+  <section className="max-w-md mx-auto glass p-6 shadow-elevation-1">
         <form className="mt-2 space-y-4" onSubmit={submit} aria-labelledby="login-heading" role="form">
           <label htmlFor="login-email" className="sr-only">Email</label>
           <input id="login-email" name="email" required type="email" autoComplete="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-3 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" disabled={loading} autoFocus />

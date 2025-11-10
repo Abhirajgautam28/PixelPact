@@ -111,7 +111,7 @@ export default function AdminTestimonials(){
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="glass p-4">
+  <div className="glass p-4 shadow-elevation-1">
           <h3 className="font-semibold">Existing testimonials</h3>
           <div className="mt-4 space-y-3" ref={ref}>
             {loading && <div className="text-sm text-slate-500">Loading…</div>}
@@ -119,7 +119,7 @@ export default function AdminTestimonials(){
             {testimonials.map((t, i)=>{
               const { className, style } = getDelayProps(i)
               return (
-                <div key={i} className={`p-3 glass ${className}`} style={style}>
+                <div key={i} className={`p-3 glass shadow-elevation-1 ${className}`} style={style}>
                   <InlineEditor
                     index={i}
                     testimonial={t}
@@ -132,7 +132,7 @@ export default function AdminTestimonials(){
           </div>
         </div>
 
-        <div className="glass p-4">
+  <div className="glass p-4 shadow-elevation-1">
           <h3 className="font-semibold">Add testimonial</h3>
           <AddForm onAdd={addTestimonial} />
         </div>

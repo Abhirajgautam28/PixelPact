@@ -10,7 +10,7 @@ export default function Terms(){
       </header>
 
       <section className="max-w-3xl mx-auto px-4">
-        <div className="glass p-6">
+  <div className="glass p-6 shadow-elevation-1">
           <div className="prose max-w-none text-slate-800">
             <h2 className="text-lg font-semibold">Using PixelPact</h2>
             <p>By using PixelPact you agree to follow these terms. Use the service responsibly and don't impersonate others or submit illegal content.</p>
