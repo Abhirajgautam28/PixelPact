@@ -33,17 +33,23 @@ export default function Login(){
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <h2 className="text-2xl font-semibold">Sign in</h2>
-      <form className="mt-4 space-y-3" onSubmit={submit}>
-        <input required type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-2 border rounded" />
-        <input required type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-2 border rounded" />
-        <div className="flex items-center justify-between">
-          <button className="px-4 py-2 rounded bg-indigo-600 text-white" disabled={loading}>{loading? 'Signing in…':'Sign in'}</button>
-          <Link to="/register" className="text-sm text-slate-600">Create account</Link>
-        </div>
-      </form>
-    </div>
+    <main className="space-y-12">
+      <header className="text-center max-w-4xl mx-auto">
+        <h1 className="text-3xl font-extrabold">Sign in</h1>
+        <p className="mt-2 text-slate-600">Welcome back — sign in to continue to your rooms and boards.</p>
+      </header>
+
+      <section className="max-w-md mx-auto glass p-6">
+        <form className="mt-2 space-y-4" onSubmit={submit}>
+          <input required type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-3 border rounded shadow-sm" />
+          <input required type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 border rounded shadow-sm" />
+          <div className="flex items-center justify-between">
+            <button className="px-4 py-2 rounded bg-indigo-600 text-white" disabled={loading}>{loading? 'Signing in…':'Sign in'}</button>
+            <Link to="/register" className="text-sm text-slate-600">Create account</Link>
+          </div>
+        </form>
+      </section>
+    </main>
   )
 }
 

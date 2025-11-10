@@ -35,17 +35,23 @@ export default function Register(){
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <h2 className="text-2xl font-semibold">Create an account</h2>
-      <form className="mt-4 space-y-3" onSubmit={submit}>
-        <input required placeholder="Name" value={name} onChange={e=>setName(e.target.value)} className="w-full p-2 border rounded" />
-        <input required type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-2 border rounded" />
-        <input required type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-2 border rounded" />
-        <div className="flex items-center justify-between">
-          <button className="px-4 py-2 rounded bg-indigo-600 text-white" disabled={loading}>{loading? 'Creating…':'Create account'}</button>
-          <Link to="/login" className="text-sm text-slate-600">Already have an account?</Link>
-        </div>
-      </form>
-    </div>
+    <main className="space-y-12">
+      <header className="text-center max-w-4xl mx-auto">
+        <h1 className="text-3xl font-extrabold">Create an account</h1>
+        <p className="mt-2 text-slate-600">Join PixelPact to collaborate on whiteboards, templates and more.</p>
+      </header>
+
+      <section className="max-w-md mx-auto glass p-6">
+        <form className="mt-2 space-y-4" onSubmit={submit}>
+          <input required placeholder="Name" value={name} onChange={e=>setName(e.target.value)} className="w-full p-3 border rounded shadow-sm" />
+          <input required type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-3 border rounded shadow-sm" />
+          <input required type="password" placeholder="Password (min 8 chars)" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 border rounded shadow-sm" />
+          <div className="flex items-center justify-between">
+            <button className="px-4 py-2 rounded bg-indigo-600 text-white" disabled={loading}>{loading? 'Creating…':'Create account'}</button>
+            <Link to="/login" className="text-sm text-slate-600">Already have an account?</Link>
+          </div>
+        </form>
+      </section>
+    </main>
   )
 }

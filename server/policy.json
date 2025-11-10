@@ -1,0 +1,18 @@
+{
+  "updatedAt": "2025-11-11",
+  "privacy": {
+    "effective": "2025-11-11",
+    "path": "/privacy"
+  },
+  "terms": {
+    "effective": "2025-11-11",
+    "path": "/terms"
+  },
+  "changelog": [
+    {
+      "date": "2025-11-11",
+      "title": "Test update"
+    }
+  ],
+  "source": "/privacy"
+}
