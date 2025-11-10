@@ -232,50 +232,46 @@ export default function Home(){
   }, [])
 
   return (
-    <section className="space-y-12">
-      {/* ensure toast is available */}
-      {null}
+    <main className="space-y-12" aria-labelledby="home-hero">
       {/* Hero */}
-  <div className="grid lg:grid-cols-2 gap-10 items-center">
-  <div>
-          <h2 className="text-4xl font-extrabold accent-heading">PixelPact — where teams create together</h2>
-          <p className="mt-4 text-slate-700 max-w-xl">A modern collaborative whiteboard with realtime sync, beautiful templates, extensible tools, and enterprise-grade controls. <span className="emoji">✨</span></p>
+      <header id="home-hero" className="grid lg:grid-cols-2 gap-10 items-center max-w-6xl mx-auto px-4">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">PixelPact — where teams create together</h1>
+          <p className="mt-4 text-slate-700 max-w-lg">A collaborative whiteboard with realtime sync, beautiful templates, extensible tools, and enterprise-ready controls.</p>
 
           <div className="mt-6">
-            <div className="inline-flex items-center gap-3 p-3 bg-gradient-to-r from-[#fff7ed] to-[#f0fbff] rounded-full">
+            <div className="inline-flex items-center gap-3 p-3 bg-gradient-to-r from-[#fff7ed] to-[#f0fbff] rounded-full" aria-hidden="true">
               <strong className="text-[#ff7b7b]">{rotating[idx]}</strong>
               <span className="text-sm text-slate-500">• Live cursors • Layers • Undo/Redo</span>
             </div>
           </div>
 
-            <div className="mt-8 flex gap-4 items-center justify-start">
-            <button onClick={()=> createRoom()} className="relative px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room 🚀
-              <span className="absolute -right-3 -top-2 w-3 h-3 rounded-full bg-[#ff6b6b] animate-pulse" aria-hidden="true" />
-            </button>
-            <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Watch demo</Link>
+          <div className="mt-8 flex gap-4 items-center">
+            <button onClick={()=> createRoom()} className="relative px-6 py-3 rounded-md bg-indigo-600 text-white font-semibold shadow focus:outline-none focus:ring-2 focus:ring-indigo-400" aria-label="Create a new room">Create Room</button>
+            <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300">Watch demo</Link>
           </div>
 
-          <div className="mt-6 text-sm text-slate-500">Used by teams at startups and enterprises for fast ideation and polished presentations.</div>
+          <div className="mt-6 text-sm text-slate-500">Used by teams at startups and enterprises for quick ideation and polished presentations.</div>
         </div>
 
         <div className="w-full">
           <div className="glass p-4">
             <div className="min-h-[18rem] sm:min-h-[20rem] bg-white rounded-lg flex flex-col p-4 overflow-hidden">
               <div className="flex items-center justify-between mb-3">
-                <div className="text-sm font-semibold">Canvas • Room #123</div>
-                <div className="text-xs text-slate-400">Live • 5 participants</div>
+                <div className="text-sm font-semibold">Canvas • Live preview</div>
+                <div className="text-xs text-slate-400">Realtime • Collaborative</div>
               </div>
               <div className="flex-1 rounded-md bg-gradient-to-br from-[#fff] to-[#f7fbff] border border-slate-100 flex items-center justify-center text-slate-400 overflow-hidden">
                 <div className="w-full h-full max-h-full" ref={(el)=>{ /* placeholder for mount */ }}>
                   <Suspense fallback={<HeroPlaceholder/>}>
                       <LottiePlayer animationData={miniAnim} style={{width: '100%', height: '100%'}} />
-                    </Suspense>
+                  </Suspense>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Expanded features */}
       <div>
@@ -349,6 +345,6 @@ export default function Home(){
           <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Launch demo</Link>
         </div>
       </div>
-    </section>
+    </main>
   )
 }
