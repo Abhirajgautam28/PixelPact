@@ -3,8 +3,43 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#6C5CE7',
-        accent: '#00BFA6'
+        // Material-inspired indigo primary palette
+        primary: {
+          50: '#e8eaf6',
+          100: '#c5cae9',
+          200: '#9fa8da',
+          300: '#7986cb',
+          400: '#5c6bc0',
+          500: '#3f51b5',
+          600: '#3949ab',
+          700: '#303f9f',
+          800: '#283593',
+          900: '#1a237e',
+          DEFAULT: '#3f51b5'
+        },
+        accent: '#00BFA6',
+        surface: '#ffffff',
+        'on-surface': '#0f172a',
+        background: '#F6FBFF'
+      },
+      // Material-like elevation shadows mapped to boxShadow utilities
+      boxShadow: {
+        'elevation-1': '0 1px 3px rgba(16,24,40,0.06), 0 1px 2px rgba(16,24,40,0.04)',
+        'elevation-2': '0 6px 20px rgba(16,24,40,0.08)'
+      },
+      // Provide a small set of design tokens for typography / spacing
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial'],
+        heading: ['Playfair Display', 'Georgia', 'serif']
+      },
+      fontSize: {
+        'xs': '.75rem',
+        'sm': '.875rem',
+        'base': '1rem',
+        'lg': '1.125rem',
+        'xl': '1.25rem',
+        '2xl': '1.5rem',
+        '3xl': '1.875rem'
       },
       animation: {
         'float-slow': 'float 6s ease-in-out infinite',
