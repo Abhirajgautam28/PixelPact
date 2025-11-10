@@ -23,18 +23,21 @@ export default function Privacy(){
         </nav>
 
         <div className="col-span-3 glass p-6">
-          <section id="summary">
-            <h2 className="text-2xl font-semibold">Quick summary</h2>
-            <ul className="mt-3 list-disc list-inside text-slate-700">
-              <li>We use your data to operate and improve PixelPact.</li>
-              <li>We do not sell personal information.</li>
-              <li>Authentication uses secure, httpOnly cookies; we protect against CSRF with a double-submit token.</li>
-              <li>You can request access, correction, deletion, or portability where applicable.</li>
-            </ul>
-          </section>
+          <div className="prose max-w-none">
+            <section id="summary">
+              <h2 className="text-2xl font-semibold">Quick summary</h2>
+              <ul className="mt-3 list-disc list-inside text-slate-700">
+                <li>We use your data to operate and improve PixelPact.</li>
+                <li>We do not sell personal information.</li>
+                <li>Authentication uses secure, httpOnly cookies; we protect against CSRF with a double-submit token.</li>
+                <li>You can request access, correction, deletion, or portability where applicable.</li>
+              </ul>
+            </section>
+          </div>
         </div>
 
         <div className="col-span-3 md:col-span-2 glass p-6">
+          <div className="prose max-w-none">
           <section id="what-we-collect">
             <h2 className="text-2xl font-semibold">1. Data we collect</h2>
             <p className="text-slate-700">We collect the minimum data necessary to provide and improve the service. Typical categories include:</p>
@@ -67,6 +70,7 @@ export default function Privacy(){
               <li><strong>Business transfers:</strong> in the event of a merger or sale; we'll notify users where required.</li>
             </ul>
           </section>
+          </div>
         </div>
 
         <div className="col-span-3 md:col-span-1 glass p-6">
@@ -100,6 +104,7 @@ export default function Privacy(){
         </div>
 
         <div className="col-span-3 glass p-6">
+          <div className="prose max-w-none">
           <section id="security">
             <h2 className="text-2xl font-semibold">5. Security</h2>
             <p className="text-slate-700">We protect data in transit with TLS (HTTPS) and take industry-standard measures to protect data at rest and in operation. Access to production systems is restricted, and we use monitored logging and rate limits. No system is perfectly secure — if you suspect a breach, contact us immediately.</p>
@@ -132,8 +137,9 @@ export default function Privacy(){
 
           <section id="contact" className="mt-6">
             <h2 className="text-2xl font-semibold">11. Contact</h2>
-            <p className="text-slate-700">Questions or requests: <a href="mailto:support@pixelpact.example" className="text-sky-600">support@pixelpact.example</a>.</p>
+            <p className="text-slate-700">Questions or requests: <a href="mailto:abhirajgautam28@gmail.com" className="text-sky-600">abhirajgautam28@gmail.com</a>.</p>
           </section>
+          </div>
         </div>
       </section>
     </main>
