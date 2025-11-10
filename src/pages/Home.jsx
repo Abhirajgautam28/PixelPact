@@ -32,7 +32,7 @@ function FeatureCard({title, desc, icon, delayClass, delayStyle}){
   return (
   <div className={`p-5 bg-white rounded-lg shadow-elevation-1 transform glass ${delayClass}`} style={delayStyle} role="article">
       <div className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">{icon}</div>
+        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-primary-50 text-primary ring-1 ring-primary-100">{icon}</div>
         <div>
           <h4 className="font-medium text-slate-900">{title}</h4>
           <p className="text-sm text-slate-600 mt-1">{desc}</p>
@@ -64,8 +64,8 @@ function TemplateCard({title, desc, img, tags, onPreview, onUse}){
           {tags && tags.map(t=> <span key={t} className="text-xs bg-slate-100 px-2 py-1 rounded-md text-slate-600">{t}</span>)}
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <button onClick={onPreview} className="px-3 py-2 rounded-md bg-indigo-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">Preview</button>
-          <button onClick={onUse} className="text-sm text-indigo-600">Use template</button>
+          <button onClick={onPreview} className="px-3 py-2 rounded-md bg-primary text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">Preview</button>
+          <button onClick={onUse} className="text-sm text-primary">Use template</button>
         </div>
       </div>
     </article>
@@ -239,15 +239,15 @@ export default function Home(){
             <p className="mt-2 text-slate-700 text-lg">Collaborate in real-time with a beautiful, extensible whiteboard built for teams.</p>
 
             <div className="mt-6 flex items-center gap-3">
-              <div className="inline-flex items-center gap-3 px-3 py-2 rounded-full bg-indigo-50 text-indigo-700">
-                <strong className="text-indigo-800">{rotating[idx]}</strong>
+              <div className="inline-flex items-center gap-3 px-3 py-2 rounded-full bg-primary-50 text-primary-700">
+                <strong className="text-primary-800">{rotating[idx]}</strong>
                 <span className="text-sm text-slate-500">• Live cursors • Layers • Undo</span>
               </div>
             </div>
 
             <div className="mt-8 flex gap-4 items-center">
-              <button onClick={()=> createRoom()} className="px-5 py-3 rounded-md bg-indigo-600 text-white font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-300" aria-label="Create a new room">Create room</button>
-              <Link to="/demo" className="px-4 py-2 rounded-md border border-slate-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200">Watch demo</Link>
+              <button onClick={()=> createRoom()} className="px-5 py-3 rounded-md bg-primary text-white font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30" aria-label="Create a new room">Create room</button>
+              <Link to="/demo" className="px-4 py-2 rounded-md border border-slate-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30">Watch demo</Link>
             </div>
 
             <p className="mt-4 text-sm text-slate-500">Trusted by teams for workshops, retros, and design reviews.</p>
