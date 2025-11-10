@@ -49,5 +49,3 @@ export default function Register(){
     </div>
   )
 }
-
-// toast is available via hook above
