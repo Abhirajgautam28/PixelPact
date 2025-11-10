@@ -207,11 +207,11 @@ function Canvas({ className }){
       <div className="flex flex-col md:flex-row gap-4 mb-3 items-start">
         <div className="flex items-center gap-3">
           <div className="flex gap-2 p-2 bg-white rounded shadow-sm">
-            <button aria-pressed={tool==='brush'} onClick={()=>setTool('brush')} title="Brush" className={`px-3 py-1 rounded ${tool==='brush'? 'bg-[#6C5CE7] text-white':'bg-slate-50'}`}>Brush</button>
-            <button aria-pressed={tool==='line'} onClick={()=>setTool('line')} title="Line" className={`px-3 py-1 rounded ${tool==='line'? 'bg-[#6C5CE7] text-white':'bg-slate-50'}`}>Line</button>
-            <button aria-pressed={tool==='rect'} onClick={()=>setTool('rect')} title="Rect" className={`px-3 py-1 rounded ${tool==='rect'? 'bg-[#6C5CE7] text-white':'bg-slate-50'}`}>Rect</button>
-            <button aria-pressed={tool==='circle'} onClick={()=>setTool('circle')} title="Circle" className={`px-3 py-1 rounded ${tool==='circle'? 'bg-[#6C5CE7] text-white':'bg-slate-50'}`}>Circle</button>
-            <button aria-pressed={tool==='eraser'} onClick={()=>setTool('eraser')} title="Eraser" className={`px-3 py-1 rounded ${tool==='eraser'? 'bg-[#6C5CE7] text-white':'bg-slate-50'}`}>Eraser</button>
+            <button aria-pressed={tool==='brush'} onClick={()=>setTool('brush')} title="Brush" className={`px-3 py-1 rounded ${tool==='brush'? 'bg-primary text-white':'bg-slate-50'}`}>Brush</button>
+            <button aria-pressed={tool==='line'} onClick={()=>setTool('line')} title="Line" className={`px-3 py-1 rounded ${tool==='line'? 'bg-primary text-white':'bg-slate-50'}`}>Line</button>
+            <button aria-pressed={tool==='rect'} onClick={()=>setTool('rect')} title="Rect" className={`px-3 py-1 rounded ${tool==='rect'? 'bg-primary text-white':'bg-slate-50'}`}>Rect</button>
+            <button aria-pressed={tool==='circle'} onClick={()=>setTool('circle')} title="Circle" className={`px-3 py-1 rounded ${tool==='circle'? 'bg-primary text-white':'bg-slate-50'}`}>Circle</button>
+            <button aria-pressed={tool==='eraser'} onClick={()=>setTool('eraser')} title="Eraser" className={`px-3 py-1 rounded ${tool==='eraser'? 'bg-primary text-white':'bg-slate-50'}`}>Eraser</button>
           </div>
           <div className="flex items-center gap-2 ml-4">
             <label className="text-sm">Color</label>
@@ -224,7 +224,7 @@ function Canvas({ className }){
         <div className="ml-auto flex items-center gap-2">
           <button onClick={undo} className="px-3 py-1 rounded bg-slate-100">Undo</button>
           <button onClick={clear} className="px-3 py-1 rounded bg-slate-100">Clear</button>
-          <button onClick={replay} className="px-3 py-1 rounded bg-[#6C5CE7] text-white">Play</button>
+          <button onClick={replay} className="px-3 py-1 rounded bg-primary text-white">Play</button>
           <button onClick={save} className="px-3 py-1 rounded border">Save</button>
           <button onClick={simulate} className="px-3 py-1 rounded bg-slate-50">Simulate</button>
         </div>
