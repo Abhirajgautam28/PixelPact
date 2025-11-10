@@ -5,20 +5,62 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens exposed as CSS variables for easy runtime tweaks */
+:root {
+  /* Primary (indigo) */
+  --md-primary-50: #e8eaf6;
+  --md-primary-100: #c5cae9;
+  --md-primary-200: #9fa8da;
+  --md-primary-300: #7986cb;
+  --md-primary-400: #5c6bc0;
+  --md-primary-500: #3f51b5;
+  --md-primary-600: #3949ab;
+  --md-primary-700: #303f9f;
+  --md-primary-800: #283593;
+  --md-primary-900: #1a237e;
+  --md-primary: var(--md-primary-500);
+
+  /* Surfaces & text */
+  --md-surface: #ffffff;
+  --md-on-surface: #0f172a;
+  --md-background: #F6FBFF;
+
+  /* Elevation shadows (used via box-shadow tokens / utilities) */
+  --md-elevation-1: 0 1px 3px rgba(16,24,40,0.06), 0 1px 2px rgba(16,24,40,0.04);
+  --md-elevation-2: 0 6px 20px rgba(16,24,40,0.08);
+
+  /* Spacing tokens (rem-based) */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem;  /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem;    /* 16px */
+  --space-6: 1.5rem;  /* 24px */
+  --space-8: 2rem;    /* 32px */
+
+  /* Typography scale */
+  --text-xs: .75rem;
+  --text-sm: .875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --heading-font: 'Playfair Display', Georgia, serif;
+  --body-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
 html, body, #root {
   height: 100%;
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-  background: linear-gradient(180deg, #FFFBFF 0%, #F6FBFF 100%);
-  color: #0f172a;
+  font-family: var(--body-font);
+  background: linear-gradient(180deg, #FFFBFF 0%, var(--md-background) 100%);
+  color: var(--md-on-surface);
 }
 
 /* colorful headings */
-.accent-heading { font-family: 'Playfair Display', Georgia, serif; color: #6C5CE7 }
+.accent-heading { font-family: var(--heading-font); color: var(--md-primary); }
 
 /* subtle card */
 .glass {
-  background: rgba(255,255,255,0.8);
-  box-shadow: 0 6px 20px rgba(16,24,40,0.08);
+  background: var(--md-surface);
+  box-shadow: var(--md-elevation-2);
   border-radius: 12px;
 }
 
