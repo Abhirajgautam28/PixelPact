@@ -103,7 +103,7 @@ export default function AdminTestimonials(){
           <div className="text-xs text-slate-500 mb-1">Admin token (session)</div>
           <input className="w-full p-2 border border-slate-200 rounded" value={passphrase} onChange={e=> setPassphrase(e.target.value)} placeholder="Admin password or token (paste JWT or legacy token)" />
           <div className="mt-2 flex gap-2">
-            <button className="px-3 py-2 rounded bg-[#6C5CE7] text-white" onClick={attemptLogin}>Login / Save</button>
+            <button className="px-3 py-2 rounded bg-primary text-white" onClick={attemptLogin}>Login / Save</button>
             <button className="px-3 py-2 rounded border" onClick={()=>{ setAuthToken(''); sessionStorage.removeItem('adminToken'); setPassphrase('') }}>Logout</button>
           </div>
           {authToken && <div className="mt-2 text-xs text-slate-500">Logged in token: <span className="font-mono text-[10px] break-all">{authToken}</span></div>}
@@ -163,7 +163,7 @@ export default function AdminTestimonials(){
         <textarea className="w-full mt-1 p-2 border border-slate-200 rounded" value={text} onChange={e=> setText(e.target.value)} />
       </label>
       <div>
-        <button className="px-4 py-2 rounded bg-[#6C5CE7] text-white" type="submit">Add testimonial</button>
+        <button className="px-4 py-2 rounded bg-primary text-white" type="submit">Add testimonial</button>
       </div>
     </form>
   )
