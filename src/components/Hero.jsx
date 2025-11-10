@@ -18,7 +18,7 @@ export default function Hero() {
       </div>
 
       <div className="relative">
-        <div className="w-full aspect-[4/3] rounded-xl overflow-hidden glass border border-slate-800 shadow-2xl">
+  <div className="w-full aspect-[4/3] rounded-xl overflow-hidden glass border border-slate-800 shadow-elevation-2">
           <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 p-6">
             <div className="w-full h-full bg-gradient-to-br from-[#071029] to-transparent rounded-md flex items-center justify-center text-slate-500">Interactive Canvas Preview</div>
           </div>

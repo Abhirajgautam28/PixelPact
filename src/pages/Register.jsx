@@ -41,7 +41,7 @@ export default function Register(){
         <p className="mt-2 text-slate-600">Join PixelPact to collaborate on whiteboards, templates and more.</p>
       </header>
 
-      <section className="max-w-md mx-auto glass p-6">
+  <section className="max-w-md mx-auto glass p-6 shadow-elevation-1">
         <form className="mt-2 space-y-4" onSubmit={submit} aria-labelledby="register-heading" role="form">
           <label htmlFor="name" className="sr-only">Full name</label>
           <input id="name" name="name" autoComplete="name" required placeholder="Name" value={name} onChange={e=>setName(e.target.value)} className="w-full p-3 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" disabled={loading} autoFocus />

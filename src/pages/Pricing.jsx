@@ -20,7 +20,7 @@ export default function Pricing(){
 
       <div className="mt-6 grid md:grid-cols-3 gap-6">
         {plans.map(p=> (
-          <div className="glass p-6 flex flex-col" key={p.name}>
+          <div className="glass p-6 flex flex-col shadow-elevation-1" key={p.name}>
             <div className="flex items-baseline justify-between">
               <h3 className="font-semibold text-lg">{p.name}</h3>
               <div className="text-slate-500 text-sm">Billed monthly</div>
@@ -36,7 +36,7 @@ export default function Pricing(){
         ))}
       </div>
 
-      <div className="glass p-6">
+  <div className="glass p-6 shadow-elevation-1">
         <h3 className="text-lg font-semibold">Compare features</h3>
         <div className="mt-4 overflow-auto">
           <table className="w-full text-left text-sm table-auto">
@@ -78,7 +78,7 @@ export default function Pricing(){
         </div>
       </div>
 
-      <div className="glass p-6">
+  <div className="glass p-6 shadow-elevation-1">
         <h3 className="text-lg font-semibold">Frequently asked questions</h3>
         <div className="mt-3 space-y-3 text-slate-700">
           <div>
