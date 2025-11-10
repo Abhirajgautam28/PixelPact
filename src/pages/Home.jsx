@@ -29,14 +29,12 @@ const rotating = [
   'Present beautifully 🎨'
 ]
 function FeatureCard({title, desc, icon, delayClass, delayStyle}){
-  
-
   return (
-    <div className={`p-6 glass transform ${delayClass}`} style={delayStyle}>
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-md flex items-center justify-center bg-gradient-to-br from-[#ffd6e0] to-[#e7f5ff]">{icon}</div>
+  <div className={`p-5 bg-white rounded-lg shadow-md transform glass ${delayClass}`} style={delayStyle} role="article">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">{icon}</div>
         <div>
-          <h4 className="font-semibold">{title}</h4>
+          <h4 className="font-medium text-slate-900">{title}</h4>
           <p className="text-sm text-slate-600 mt-1">{desc}</p>
         </div>
       </div>
@@ -46,28 +44,28 @@ function FeatureCard({title, desc, icon, delayClass, delayStyle}){
 
 function Testimonial({name, role, text}){
   return (
-    <div className="p-4 glass">
-      <div className="font-semibold">{name} <span className="text-sm text-slate-500">• {role}</span></div>
-      <div className="mt-2 text-sm text-slate-700">“{text}”</div>
-    </div>
+    <figure className="p-4 bg-white rounded-lg shadow-sm">
+      <blockquote className="text-sm text-slate-700">“{text}”</blockquote>
+      <figcaption className="mt-3 text-sm font-semibold text-slate-900">{name} <span className="text-sm text-slate-500">• {role}</span></figcaption>
+    </figure>
   )
 }
 
 function TemplateCard({title, desc, img, tags, onPreview, onUse}){
   return (
-    <article className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
-      <div className="h-40 bg-slate-100 overflow-hidden">
+    <article className="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition-transform transform hover:-translate-y-1">
+      <div className="h-40 bg-slate-50 overflow-hidden">
         <img src={img} alt={title} className="w-full h-full object-cover" />
       </div>
       <div className="p-4">
-        <h4 className="font-semibold text-lg">{title}</h4>
+        <h4 className="font-medium text-lg text-slate-900">{title}</h4>
         <p className="text-sm text-slate-600 mt-2">{desc}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {tags && tags.map(t=> <span key={t} className="text-xs bg-slate-100 px-2 py-1 rounded-md text-slate-600">{t}</span>)}
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <button onClick={onPreview} className="px-3 py-2 rounded-md bg-[#6C5CE7] text-white text-sm">Preview</button>
-          <button onClick={onUse} className="text-sm text-slate-500">Use template</button>
+          <button onClick={onPreview} className="px-3 py-2 rounded-md bg-indigo-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">Preview</button>
+          <button onClick={onUse} className="text-sm text-indigo-600">Use template</button>
         </div>
       </div>
     </article>
@@ -234,39 +232,37 @@ export default function Home(){
   return (
     <main className="space-y-12" aria-labelledby="home-hero">
       {/* Hero */}
-      <header id="home-hero" className="grid lg:grid-cols-2 gap-10 items-center max-w-6xl mx-auto px-4">
-        <div>
-          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">PixelPact — where teams create together</h1>
-          <p className="mt-4 text-slate-700 max-w-lg">A collaborative whiteboard with realtime sync, beautiful templates, extensible tools, and enterprise-ready controls.</p>
+      <header id="home-hero" className="max-w-6xl mx-auto px-4">
+        <div className="grid lg:grid-cols-2 gap-8 items-center">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">PixelPact</h1>
+            <p className="mt-2 text-slate-700 text-lg">Collaborate in real-time with a beautiful, extensible whiteboard built for teams.</p>
 
-          <div className="mt-6">
-            <div className="inline-flex items-center gap-3 p-3 bg-gradient-to-r from-[#fff7ed] to-[#f0fbff] rounded-full" aria-hidden="true">
-              <strong className="text-[#ff7b7b]">{rotating[idx]}</strong>
-              <span className="text-sm text-slate-500">• Live cursors • Layers • Undo/Redo</span>
-            </div>
-          </div>
-
-          <div className="mt-8 flex gap-4 items-center">
-            <button onClick={()=> createRoom()} className="relative px-6 py-3 rounded-md bg-indigo-600 text-white font-semibold shadow focus:outline-none focus:ring-2 focus:ring-indigo-400" aria-label="Create a new room">Create Room</button>
-            <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300">Watch demo</Link>
-          </div>
-
-          <div className="mt-6 text-sm text-slate-500">Used by teams at startups and enterprises for quick ideation and polished presentations.</div>
-        </div>
-
-        <div className="w-full">
-          <div className="glass p-4">
-            <div className="min-h-[18rem] sm:min-h-[20rem] bg-white rounded-lg flex flex-col p-4 overflow-hidden">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm font-semibold">Canvas • Live preview</div>
-                <div className="text-xs text-slate-400">Realtime • Collaborative</div>
+            <div className="mt-6 flex items-center gap-3">
+              <div className="inline-flex items-center gap-3 px-3 py-2 rounded-full bg-indigo-50 text-indigo-700">
+                <strong className="text-indigo-800">{rotating[idx]}</strong>
+                <span className="text-sm text-slate-500">• Live cursors • Layers • Undo</span>
               </div>
-              <div className="flex-1 rounded-md bg-gradient-to-br from-[#fff] to-[#f7fbff] border border-slate-100 flex items-center justify-center text-slate-400 overflow-hidden">
-                <div className="w-full h-full max-h-full" ref={(el)=>{ /* placeholder for mount */ }}>
-                  <Suspense fallback={<HeroPlaceholder/>}>
-                      <LottiePlayer animationData={miniAnim} style={{width: '100%', height: '100%'}} />
-                  </Suspense>
-                </div>
+            </div>
+
+            <div className="mt-8 flex gap-4 items-center">
+              <button onClick={()=> createRoom()} className="px-5 py-3 rounded-md bg-indigo-600 text-white font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-300" aria-label="Create a new room">Create room</button>
+              <Link to="/demo" className="px-4 py-2 rounded-md border border-slate-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200">Watch demo</Link>
+            </div>
+
+            <p className="mt-4 text-sm text-slate-500">Trusted by teams for workshops, retros, and design reviews.</p>
+          </div>
+
+          <div>
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-medium text-slate-800">Live preview</div>
+                <div className="text-xs text-slate-400">Realtime</div>
+              </div>
+              <div className="h-56 md:h-64 rounded-md bg-gradient-to-br from-white to-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden">
+                <Suspense fallback={<HeroPlaceholder/>}>
+                  <LottiePlayer animationData={miniAnim} style={{width: '100%', height: '100%'}} />
+                </Suspense>
               </div>
             </div>
           </div>
