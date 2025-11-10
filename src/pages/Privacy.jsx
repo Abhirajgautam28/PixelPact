@@ -2,9 +2,9 @@ import React from 'react'
 
 export default function Privacy(){
   return (
-    <main className="space-y-12">
+    <main className="space-y-12" role="main" aria-labelledby="privacy-heading">
       <header className="text-center max-w-4xl mx-auto">
-        <h1 className="text-4xl font-extrabold">Privacy Policy</h1>
+        <h1 id="privacy-heading" className="text-4xl font-extrabold">Privacy Policy</h1>
         <p className="mt-4 text-slate-700">Effective date: November 10, 2025</p>
         <p className="mt-4 text-slate-600 max-w-2xl mx-auto">This Privacy Policy explains what personal data PixelPact collects, how we use it, and the choices you have. We keep this short and practical — if you need more detail, contact us (details below).</p>
       </header>
@@ -137,7 +137,7 @@ export default function Privacy(){
 
           <section id="contact" className="mt-6">
             <h2 className="text-2xl font-semibold">11. Contact</h2>
-            <p className="text-slate-700">Questions or requests: <a href="mailto:abhirajgautam28@gmail.com" className="text-sky-600">abhirajgautam28@gmail.com</a>.</p>
+            <p className="text-slate-700">Questions or requests: <a href="mailto:support@pixelpact.example" className="text-sky-600">support@pixelpact.example</a>.</p>
           </section>
           </div>
         </div>

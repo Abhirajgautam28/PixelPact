@@ -2,9 +2,9 @@ import React from 'react'
 
 export default function Terms(){
   return (
-    <main className="space-y-12">
+    <main className="space-y-12" role="main" aria-labelledby="terms-heading">
       <header className="text-center max-w-4xl mx-auto">
-        <h1 className="text-4xl font-extrabold">Terms of Service</h1>
+        <h1 id="terms-heading" className="text-4xl font-extrabold">Terms of Service</h1>
         <p className="mt-4 text-slate-700">Last updated: November 10, 2025</p>
         <p className="mt-4 text-slate-600 max-w-2xl mx-auto">These Terms govern your use of PixelPact. Please read them carefully — using the service indicates you accept these terms.</p>
       </header>
@@ -96,7 +96,7 @@ export default function Terms(){
 
             <section id="contact" className="mt-6">
               <h2 className="text-2xl font-semibold">14. Contact</h2>
-              <p className="text-slate-700">Questions about these Terms: <a href="mailto:abhirajgautam28@gmail.com" className="text-sky-600">abhirajgautam28@gmail.com</a></p>
+              <p className="text-slate-700">Questions about these Terms: <a href="mailto:support@pixelpact.example" className="text-sky-600">support@pixelpact.example</a></p>
             </section>
           </div>
         </div>
