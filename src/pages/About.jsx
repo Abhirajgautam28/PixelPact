@@ -61,7 +61,7 @@ export default function About(){
 
       <section className="max-w-4xl mx-auto text-center">
         <h3 className="text-lg font-semibold">Work with us</h3>
-        <p className="mt-2 text-slate-700">Interested in partnering or joining the team? Email <a className="text-indigo-600" href="mailto:hello@pixelpact.example">hello@pixelpact.example</a>.</p>
+  <p className="mt-2 text-slate-700">Interested in partnering or joining the team? Email <a className="text-indigo-600" href="mailto:support@pixelpact.example">support@pixelpact.example</a>.</p>
       </section>
     </main>
   )

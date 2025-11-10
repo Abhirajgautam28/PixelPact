@@ -1,9 +1,18 @@
 {
-  "updatedAt": "2025-11-10",
-  "privacy": { "effective": "2025-11-10", "path": "/privacy" },
-  "terms": { "effective": "2025-11-10", "path": "/terms" },
+  "updatedAt": "2025-11-11",
+  "privacy": {
+    "effective": "2025-11-11",
+    "path": "/privacy"
+  },
+  "terms": {
+    "effective": "2025-11-11",
+    "path": "/terms"
+  },
   "changelog": [
-    { "date": "2025-11-10", "title": "Initial policy release", "details": "Privacy and Terms pages updated and exposed as machine-readable policy.json." }
+    {
+      "date": "2025-11-11",
+      "title": "Test update"
+    }
   ],
   "source": "/privacy"
 }
