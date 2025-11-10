@@ -32,7 +32,7 @@ export default class ErrorBoundary extends React.Component {
           <h2 className="text-xl font-semibold">Something went wrong</h2>
           <p className="mt-2 text-sm text-slate-600">An unexpected error occurred while rendering the app. You can reload the page or copy the error details for debugging.</p>
           <div className="mt-4 flex gap-2">
-            <button className="px-4 py-2 rounded bg-[#6C5CE7] text-white" onClick={()=> window.location.reload()}>Reload page</button>
+            <button className="px-4 py-2 rounded bg-primary text-white" onClick={()=> window.location.reload()}>Reload page</button>
             <button className="px-4 py-2 rounded border" onClick={()=> { navigator.clipboard && navigator.clipboard.writeText(String(error) + '\n' + (info?.componentStack || '')) }}>Copy error</button>
           </div>
           {import.meta.env.MODE !== 'production' && (

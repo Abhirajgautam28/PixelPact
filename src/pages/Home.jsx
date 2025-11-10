@@ -337,7 +337,7 @@ export default function Home(){
         <h3 className="text-2xl font-semibold">Ready to create together?</h3>
         <p className="text-slate-600 mt-2">Start a room in seconds — invite teammates, or try a demo session.</p>
           <div className="mt-6 flex items-center justify-center gap-4">
-          <button onClick={()=> createRoom()} className="px-6 py-3 rounded-md bg-[#6C5CE7] text-white font-semibold">Create Room</button>
+          <button onClick={()=> createRoom()} className="px-6 py-3 rounded-md bg-primary text-white font-semibold">Create Room</button>
           <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Launch demo</Link>
         </div>
       </div>

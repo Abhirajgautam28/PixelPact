@@ -28,7 +28,7 @@ export default function PreviewModal({open, onClose, title, img, desc, onOpen}){
         </div>
         <div className="p-4 flex justify-end gap-2 border-t">
           <button className="px-4 py-2 rounded-md border" onClick={onClose}>Close</button>
-          <button className="px-4 py-2 rounded-md bg-[#6C5CE7] text-white" onClick={() => onOpen && onOpen()}>Open in editor</button>
+          <button className="px-4 py-2 rounded-md bg-primary text-white" onClick={() => onOpen && onOpen()}>Open in editor</button>
         </div>
       </div>
     </div>

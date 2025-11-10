@@ -18,7 +18,7 @@ export default function RouteError(){
         <p className="mt-2 text-slate-600">The page failed to load. You can try reloading, return to the homepage, or copy the error details to investigate.</p>
 
         <div className="mt-4 flex gap-2">
-          <button className="px-4 py-2 rounded bg-[#6C5CE7] text-white" onClick={()=> window.location.reload()}>Reload</button>
+          <button className="px-4 py-2 rounded bg-primary text-white" onClick={()=> window.location.reload()}>Reload</button>
           <Link to="/" className="px-4 py-2 rounded border">Go home</Link>
           <button className="px-4 py-2 rounded border" onClick={()=> { navigator.clipboard && navigator.clipboard.writeText(String(err)) }}>Copy error</button>
         </div>

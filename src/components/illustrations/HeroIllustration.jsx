@@ -5,7 +5,7 @@ export default function HeroIllustration(){
     <svg viewBox="0 0 600 400" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient id="g1" x1="0" x2="1">
-          <stop offset="0%" stopColor="#6C5CE7" />
+          <stop offset="0%" stopColor="var(--md-primary)" />
           <stop offset="100%" stopColor="#00BFA6" />
         </linearGradient>
       </defs>
