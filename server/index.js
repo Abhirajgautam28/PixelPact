@@ -223,6 +223,14 @@ app.get('/api/testimonials', (req, res) => {
 // Machine-readable policy metadata for automated ingestion
 app.get('/policy.json', (req, res) => {
   try{
+    const p = path.resolve(process.cwd(), 'server', 'policy.json')
+    if (fs.existsSync(p)){
+      const raw = fs.readFileSync(p, 'utf8')
+      const obj = JSON.parse(raw || '{}')
+      res.setHeader('Content-Type', 'application/json')
+      return res.json(obj)
+    }
+    // fallback default
     const meta = {
       updatedAt: '2025-11-10',
       privacy: { effective: '2025-11-10', path: '/privacy' },
@@ -235,6 +243,30 @@ app.get('/policy.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json')
     return res.json(meta)
   }catch(err){ console.error('policy.json error', err); return res.status(500).json({}) }
+})
+
+// Admin status endpoint
+app.get('/api/admin/me', (req, res) => {
+  try{
+    if (checkAdmin(req)) return res.json({ admin: true })
+    return res.status(401).json({ admin: false })
+  }catch(err){ return res.status(500).json({ admin: false }) }
+})
+
+// Replace policy file (admin-only)
+app.post('/api/admin/policy', (req, res) => {
+  if (!checkAdmin(req)) return res.status(401).json({ message: 'unauthorized' })
+  try{
+    const body = req.body || {}
+    // basic validation: must be an object with privacy and terms keys
+    if (typeof body !== 'object' || Array.isArray(body)) return res.status(400).json({ message: 'invalid' })
+    const p = path.resolve(process.cwd(), 'server', 'policy.json')
+    // write atomically
+    const tmp = p + '.tmp'
+    fs.writeFileSync(tmp, JSON.stringify(body, null, 2), 'utf8')
+    fs.renameSync(tmp, p)
+    return res.json({ ok: true })
+  }catch(err){ console.error('write policy failed', err); return res.status(500).json({ message: 'error' }) }
 })
 
 // Return current authenticated user (if any)
