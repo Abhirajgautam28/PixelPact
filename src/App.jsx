@@ -13,6 +13,7 @@ const Register = lazy(()=> import('./pages/Register'))
 const Login = lazy(()=> import('./pages/Login'))
 const Whiteboard = lazy(()=> import('./pages/Whiteboard'))
 const AdminTestimonials = lazy(()=> import('./pages/AdminTestimonials'))
+const AdminPolicies = lazy(()=> import('./pages/AdminPolicies'))
 const Privacy = lazy(()=> import('./pages/Privacy'))
 const Terms = lazy(()=> import('./pages/Terms'))
 
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
     { path: '/register', element: <Register/> },
     { path: '/login', element: <Login/> },
     { path: '/admin/testimonials', element: <AdminTestimonials/> },
+  { path: '/admin/policies', element: <AdminPolicies/> },
     { path: '/board/:id', element: <Whiteboard/> },
   ] }
 ], { future: { v7_startTransition: true, v7_relativeSplatPath: true } })

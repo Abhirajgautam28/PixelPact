@@ -220,6 +220,23 @@ app.get('/api/testimonials', (req, res) => {
   }
 })
 
+// Machine-readable policy metadata for automated ingestion
+app.get('/policy.json', (req, res) => {
+  try{
+    const meta = {
+      updatedAt: '2025-11-10',
+      privacy: { effective: '2025-11-10', path: '/privacy' },
+      terms: { effective: '2025-11-10', path: '/terms' },
+      changelog: [
+        { date: '2025-11-10', title: 'Initial policy release', details: 'Privacy and Terms pages updated and exposed as machine-readable policy.json.' }
+      ],
+      source: '/privacy'
+    }
+    res.setHeader('Content-Type', 'application/json')
+    return res.json(meta)
+  }catch(err){ console.error('policy.json error', err); return res.status(500).json({}) }
+})
+
 // Return current authenticated user (if any)
 app.get('/api/auth/me', (req, res) => {
   try{
