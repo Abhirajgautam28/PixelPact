@@ -524,6 +524,11 @@ io.on('connection', (socket) => {
     if (room) socket.to(room).emit('draw', data)
     else socket.broadcast.emit('draw', data)
   })
+  socket.on('clear', (data) => {
+    const { room } = data || {}
+    if (room) socket.to(room).emit('clear', { room })
+    else socket.broadcast.emit('clear', {})
+  })
   socket.on('disconnect', ()=> console.log('socket disconnected', socket.id))
 })
 
