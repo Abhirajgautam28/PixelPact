@@ -1,0 +1,7 @@
+node_modules/
+dist/
+build/
+scripts/
+src/__tests__/
+playwright/test-results/
+test-results/

@@ -14,7 +14,7 @@ export default class ErrorBoundary extends React.Component {
   componentDidCatch(error, info){
     // save info for dev diagnostics
     this.setState({ error, info })
-    // eslint-disable-next-line no-console
+     
     console.error('Uncaught error in component tree:', error, info)
     try{
       // static import is safe because the logger guards for non-browser envs
