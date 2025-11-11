@@ -13,6 +13,12 @@ export default function Whiteboard(){
   const [undoStack, setUndoStack] = useState([])
   const [redoStack, setRedoStack] = useState([])
   const [currentLayer, setCurrentLayer] = useState('default')
+  // drawing tool state
+  const [tool, setTool] = useState('brush') // brush, eraser, rect, ellipse, line, text
+  const [color, setColor] = useState('#111111')
+  const [size, setSize] = useState(4)
+  const shapeStart = useRef(null)
+  const shapeSnapshot = useRef(null)
 
   // connect
   useEffect(()=>{
@@ -30,12 +36,14 @@ export default function Whiteboard(){
       if (!c) return
       const ctx = c.getContext && c.getContext('2d')
       if (!ctx) return
+      ctx.save()
       ctx.strokeStyle = data.color || '#000'
       ctx.lineWidth = data.lineWidth || 2
       ctx.beginPath()
       ctx.moveTo(data.from.x, data.from.y)
       ctx.lineTo(data.to.x, data.to.y)
       ctx.stroke()
+      ctx.restore()
     })
 
     return ()=> s.close()
@@ -132,21 +140,91 @@ export default function Whiteboard(){
     }catch(e){ }
   }
 
-  function start(e){ drawing.current = true; last.current = getPos(e); pushUndo() }
+  function start(e){
+    const pos = getPos(e)
+    drawing.current = true
+    last.current = pos
+    pushUndo()
+    // for shapes, capture snapshot
+    if (tool === 'rect' || tool === 'ellipse' || tool === 'line'){
+      const c = canvasRef.current
+      try{ shapeSnapshot.current = c.toDataURL() }catch(e){ shapeSnapshot.current = null }
+      shapeStart.current = pos
+    }
+    // for text, prompt immediately
+    if (tool === 'text'){
+      const text = window.prompt('Enter text')
+      if (text){
+        const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d')
+        if (ctx){ ctx.fillStyle = color; ctx.font = `${16 * (c.width/720)}px sans-serif`; ctx.fillText(text, pos.x, pos.y + 16) }
+      }
+      drawing.current = false
+    }
+  }
+
+  function drawLineBetween(a,b,opts={}){
+    const c = canvasRef.current
+    const ctx = c.getContext && c.getContext('2d')
+    if(!ctx) return
+    ctx.save()
+    if (opts.eraser) ctx.globalCompositeOperation = 'destination-out'
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = opts.color || color
+    ctx.lineWidth = opts.size || size
+    ctx.beginPath()
+    ctx.moveTo(a.x, a.y)
+    ctx.lineTo(b.x, b.y)
+    ctx.stroke()
+    ctx.restore()
+  }
+
   function move(e){
     if(!drawing.current) return
     const pos = getPos(e)
     const c = canvasRef.current
     const ctx = c.getContext && c.getContext('2d')
     if(!ctx) return
-    ctx.beginPath()
-    ctx.moveTo(last.current.x, last.current.y)
-    ctx.lineTo(pos.x, pos.y)
-    ctx.stroke()
-    if (socket && socket.connected) socket.emit('draw', { room: currentLayer, from: last.current, to: pos, color: '#111', lineWidth: 2 })
-    last.current = pos
+    if (tool === 'brush' || tool === 'eraser'){
+      drawLineBetween(last.current, pos, { color, size, eraser: tool === 'eraser' })
+      if (socket && socket.connected) socket.emit('draw', { room: currentLayer, from: last.current, to: pos, color: (tool === 'eraser' ? null : color), lineWidth: size })
+      last.current = pos
+      return
+    }
+    // shapes: draw preview by restoring snapshot then drawing shape
+    if (tool === 'rect' || tool === 'ellipse' || tool === 'line'){
+      if (shapeSnapshot.current){
+        const img = new Image()
+        img.onload = ()=>{
+          ctx.clearRect(0,0,c.width,c.height)
+          ctx.drawImage(img,0,0,c.width,c.height)
+          ctx.save()
+          ctx.strokeStyle = color
+          ctx.lineWidth = size
+          const sx = shapeStart.current.x, sy = shapeStart.current.y
+          const ex = pos.x, ey = pos.y
+          if (tool === 'rect') ctx.strokeRect(sx, sy, ex - sx, ey - sy)
+          else if (tool === 'line') { ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke() }
+          else if (tool === 'ellipse'){
+            const rx = Math.abs(ex - sx)/2, ry = Math.abs(ey - sy)/2
+            const cx = (sx + ex)/2, cy = (sy + ey)/2
+            ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2); ctx.stroke()
+          }
+          ctx.restore()
+        }
+        img.src = shapeSnapshot.current
+      }
+    }
   }
-  function end(){ drawing.current = false; last.current = null }
+
+  function end(){
+    if (!drawing.current) return
+    if (tool === 'rect' || tool === 'ellipse' || tool === 'line'){
+      // final draw already rendered in preview; just clear snapshot
+      shapeSnapshot.current = null
+      shapeStart.current = null
+    }
+    drawing.current = false; last.current = null
+  }
 
   function undo(){
     const u = undoStack.pop()
@@ -190,6 +268,27 @@ export default function Whiteboard(){
   }catch(err){ toast.show('Invite failed', { type: 'error' }) }
   }
 
+  async function clearBoard(){
+    try{
+      const c = canvasRef.current
+      const ctx = c.getContext && c.getContext('2d')
+      if (ctx){ ctx.clearRect(0,0,c.width,c.height); pushUndo(); if (socket && socket.connected) socket.emit('clear', { room: currentLayer }) }
+    }catch(e){ }
+  }
+
+  function exportPNG(){
+    try{
+      const c = canvasRef.current
+      const url = c.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `whiteboard-${Date.now()}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    }catch(e){ toast.show('Export failed', { type: 'error' }) }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -198,6 +297,19 @@ export default function Whiteboard(){
           <div className="text-sm text-slate-500">Presence: {presence.length}</div>
         </div>
         <div className="flex items-center gap-2">
+          {/* toolbar: tool selection, color, size, clear/export */}
+          <div className="flex items-center gap-2">
+            <button onClick={()=> setTool('brush')} className={`px-2 py-1 rounded ${tool==='brush'?'bg-slate-200':''}`}>Brush</button>
+            <button onClick={()=> setTool('eraser')} className={`px-2 py-1 rounded ${tool==='eraser'?'bg-slate-200':''}`}>Eraser</button>
+            <button onClick={()=> setTool('rect')} className={`px-2 py-1 rounded ${tool==='rect'?'bg-slate-200':''}`}>Rect</button>
+            <button onClick={()=> setTool('ellipse')} className={`px-2 py-1 rounded ${tool==='ellipse'?'bg-slate-200':''}`}>Ellipse</button>
+            <button onClick={()=> setTool('line')} className={`px-2 py-1 rounded ${tool==='line'?'bg-slate-200':''}`}>Line</button>
+            <button onClick={()=> setTool('text')} className={`px-2 py-1 rounded ${tool==='text'?'bg-slate-200':''}`}>Text</button>
+            <input aria-label="color" type="color" value={color} onChange={(e)=> setColor(e.target.value)} className="w-8 h-8 p-0 border-0" />
+            <input aria-label="size" type="range" min="1" max="64" value={size} onChange={(e)=> setSize(Number(e.target.value))} />
+            <button onClick={clearBoard} className="px-2 py-1 bg-red-100 rounded">Clear</button>
+            <button onClick={exportPNG} className="px-2 py-1 bg-slate-100 rounded">Export</button>
+          </div>
           <button onClick={undo} className="px-3 py-1 bg-slate-100 rounded">Undo</button>
           <button onClick={redo} className="px-3 py-1 bg-slate-100 rounded">Redo</button>
           <button onClick={()=> setCurrentLayer(l => l === 'default' ? 'annotations' : 'default')} className="px-3 py-1 bg-slate-100 rounded">Toggle Layer</button>
