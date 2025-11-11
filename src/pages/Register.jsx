@@ -30,6 +30,8 @@ export default function Register(){
       try{ body = await res.json() }catch(e){ /* non-json response */ }
       if (!res.ok) {
         const serverMsg = body && (body.message || body.error || body.msg) ? (body.message || body.error || body.msg) : res.statusText || 'Registration failed'
+        // show server message as toast and throw to be handled by outer catch
+        toast.show(serverMsg, { type: 'error' })
         throw new Error(serverMsg)
       }
       // server sets httpOnly cookie and may return a roomId

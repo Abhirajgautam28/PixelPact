@@ -110,6 +110,7 @@ export default function Home(){
   const toast = useToast()
   const [showAdmin, setShowAdmin] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
+  const [createRoomError, setCreateRoomError] = useState(null)
 
   async function openTemplateInEditor(template){
     try{
@@ -161,7 +162,12 @@ export default function Home(){
       try{ body = await resp.json() }catch(e){ /* non-json */ }
       if (!resp.ok){
         const msg = body && (body.message || body.error || body.msg) ? (body.message || body.error || body.msg) : resp.statusText || 'Failed to create room'
-        toast.show(msg, { type: 'error' })
+        // For server errors (5xx) offer a retry UI; otherwise show toast
+        if (resp.status >= 500){
+          setCreateRoomError({ message: msg })
+        } else {
+          toast.show(msg, { type: 'error' })
+        }
         return
       }
       const roomId = body && (body.roomId || body.id || body.room) || null
@@ -244,6 +250,20 @@ export default function Home(){
 
   return (
     <main className="space-y-12" aria-labelledby="home-hero">
+      {/* Create-room retry modal for server errors */}
+      {createRoomError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/40" onClick={()=> setCreateRoomError(null)} />
+          <div className="bg-white rounded-lg p-6 shadow-lg max-w-md mx-4">
+            <h3 className="text-lg font-semibold">Server error</h3>
+            <p className="mt-2 text-sm text-slate-700">{createRoomError.message}</p>
+            <div className="mt-4 flex gap-2 justify-end">
+              <button onClick={()=> { setCreateRoomError(null); createRoom() }} className="px-3 py-2 rounded bg-primary text-white">Retry</button>
+              <button onClick={()=> setCreateRoomError(null)} className="px-3 py-2 rounded border">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Hero */}
       <header id="home-hero" className="max-w-6xl mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
