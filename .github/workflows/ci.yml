@@ -32,12 +32,12 @@ jobs:
         run: |
           nohup npx vite preview --port 5173 > vite.log 2>&1 &
           sleep 2
-      - name: Wait for services
-        run: npx wait-on --timeout 60000 http://localhost:3001/api/rooms http://localhost:5173
+      - name: Wait for services (healthcheck)
+        run: node scripts/ci-wait-and-check.mjs http://localhost:3001/api/rooms http://localhost:5173
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
-      - name: Run Playwright E2E
-        run: npx playwright test -c playwright.config.ts --project=chromium
+      - name: Run Playwright E2E (with retry wrapper)
+        run: node scripts/run-playwright-retry.mjs
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4

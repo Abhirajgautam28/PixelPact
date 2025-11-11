@@ -1,3 +1,2 @@
-// Debug helper removed - left intentionally blank.
-// This script was used temporarily during local debugging and has been cleared.
-export default undefined
+// Debug helper removed - file deleted.
+// This file will be removed in the next commit.
