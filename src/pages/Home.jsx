@@ -118,8 +118,15 @@ export default function Home(){
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ template })
       })
-      const body = await resp.json()
-      const roomId = body.roomId || body.id || body.room || null
+      let body = null
+      try{ body = await resp.json() }catch(e){ /* non-json */ }
+      if (!resp.ok){
+        const msg = body && (body.message || body.error || body.msg) ? (body.message || body.error || body.msg) : resp.statusText || 'Failed to create room'
+        setPreview(null)
+        toast.show(msg, { type: 'error' })
+        return
+      }
+      const roomId = body && (body.roomId || body.id || body.room) || null
       if(roomId){
         // close preview and navigate to editor
         setPreview(null)
@@ -130,7 +137,7 @@ export default function Home(){
       }
     }catch(e){
       setPreview(null)
-      toast.show('Failed to create room', { type: 'error' })
+      toast.show(e && e.message ? e.message : 'Failed to create room', { type: 'error' })
     }
   }
 
@@ -150,15 +157,21 @@ export default function Home(){
         setShowAuth(true)
         return
       }
-      const body = await resp.json()
-      const roomId = body.roomId || body.id || body.room || null
+      let body = null
+      try{ body = await resp.json() }catch(e){ /* non-json */ }
+      if (!resp.ok){
+        const msg = body && (body.message || body.error || body.msg) ? (body.message || body.error || body.msg) : resp.statusText || 'Failed to create room'
+        toast.show(msg, { type: 'error' })
+        return
+      }
+      const roomId = body && (body.roomId || body.id || body.room) || null
       if(roomId){
         navigate(`/board/${roomId}`)
       }else{
         toast.show('Failed to create room', { type: 'error' })
       }
     }catch(e){
-      toast.show('Failed to create room', { type: 'error' })
+      toast.show(e && e.message ? e.message : 'Failed to create room', { type: 'error' })
     }
   }
 

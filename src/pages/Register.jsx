@@ -25,10 +25,15 @@ export default function Register(){
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email, password, name })
       })
-      if (!res.ok) throw new Error('Registration failed')
-      const body = await res.json()
+      // try to parse server response for helpful messages
+      let body = null
+      try{ body = await res.json() }catch(e){ /* non-json response */ }
+      if (!res.ok) {
+        const serverMsg = body && (body.message || body.error || body.msg) ? (body.message || body.error || body.msg) : res.statusText || 'Registration failed'
+        throw new Error(serverMsg)
+      }
       // server sets httpOnly cookie and may return a roomId
-      nav(`/board/${body.roomId || 'new'}`)
+      nav(`/board/${(body && body.roomId) || 'new'}`)
     }catch(err){
       toast.show(err.message || 'Registration failed', { type: 'error' })
     }finally{ setLoading(false) }

@@ -23,10 +23,14 @@ export default function Login(){
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email, password })
       })
-      if (!res.ok) throw new Error('Login failed')
-      const body = await res.json()
+      let body = null
+      try{ body = await res.json() }catch(e){ /* non-json response */ }
+      if (!res.ok){
+        const serverMsg = body && (body.message || body.error || body.msg) ? (body.message || body.error || body.msg) : res.statusText || 'Login failed'
+        throw new Error(serverMsg)
+      }
       // server sets httpOnly cookie; navigate to room if provided
-      nav(`/board/${body.roomId || 'new'}`)
+      nav(`/board/${(body && body.roomId) || 'new'}`)
     }catch(err){
       toast.show(err.message || 'Login failed', { type: 'error' })
     }finally{ setLoading(false) }
