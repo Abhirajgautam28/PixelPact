@@ -24,6 +24,7 @@ export default function Whiteboard(){
   const [textInput, setTextInput] = useState({ visible: false, x: 0, y: 0, value: '' })
   const [liveMessage, setLiveMessage] = useState('')
   const toolbarRef = useRef(null)
+  const containerRef = useRef(null)
 
   // connect
   useEffect(()=>{
@@ -41,14 +42,27 @@ export default function Whiteboard(){
       if (!c) return
       const ctx = c.getContext && c.getContext('2d')
       if (!ctx) return
-      ctx.save()
-      ctx.strokeStyle = data.color || '#000'
-      ctx.lineWidth = data.lineWidth || 2
-      ctx.beginPath()
-      ctx.moveTo(data.from.x, data.from.y)
-      ctx.lineTo(data.to.x, data.to.y)
-      ctx.stroke()
-      ctx.restore()
+      // support various draw payloads: line, fill, clearRegion
+      if (data.fill && data.at && data.color){
+        try{ floodFillAt(Math.round(data.at.x), Math.round(data.at.y), hexToRgba(data.color)) }catch(e){}
+        return
+      }
+      if (data.clearRegion){
+        const r = data.clearRegion
+        try{ setUndoStack(s => [...s, c.toDataURL()]) }catch(e){}
+        ctx.clearRect(r.x, r.y, r.w, r.h)
+        return
+      }
+      if (data.from && data.to){
+        ctx.save()
+        ctx.strokeStyle = data.color || '#000'
+        ctx.lineWidth = data.lineWidth || 2
+        ctx.beginPath()
+        ctx.moveTo(data.from.x, data.from.y)
+        ctx.lineTo(data.to.x, data.to.y)
+        ctx.stroke()
+        ctx.restore()
+      }
     })
     s.on('clear', (data)=>{
       try{
@@ -395,6 +409,27 @@ export default function Whiteboard(){
     }catch(e){ toast.show('Export failed', { type: 'error' }) }
   }
 
+  function exportHighRes(){
+    try{
+      const c = canvasRef.current
+      const scale = 2
+      const tmp = document.createElement('canvas')
+      tmp.width = c.width * scale
+      tmp.height = c.height * scale
+      const ctx = tmp.getContext && tmp.getContext('2d')
+      if (!ctx) throw new Error('no-canvas')
+      // draw scaled
+      ctx.drawImage(c, 0, 0, tmp.width, tmp.height)
+      const url = tmp.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `whiteboard-highres-${Date.now()}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    }catch(e){ toast.show('High-res export failed', { type: 'error' }) }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -443,14 +478,40 @@ export default function Whiteboard(){
         </div>
       </div>
 
-      <div style={{height: '70vh'}} className="rounded border overflow-hidden">
+      <div ref={containerRef} style={{height: '70vh', position: 'relative'}} className="rounded border overflow-hidden">
         <canvas ref={canvasRef} style={{width: '100%', height: '100%'}} onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={move} onTouchEnd={end}
           tabIndex={0} role="application" aria-label="Whiteboard canvas" onKeyDown={(e)=>{
+            const k = e.key.toLowerCase()
             // basic keyboard shortcuts: Ctrl+Z undo, Ctrl+Y redo, C clear
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){ e.preventDefault(); undo(); }
-            if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))){ e.preventDefault(); redo(); }
-            if (!e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'c'){ e.preventDefault(); clearBoard() }
+            if ((e.ctrlKey || e.metaKey) && k === 'z'){ e.preventDefault(); undo(); return }
+            if ((e.ctrlKey || e.metaKey) && (k === 'y' || (e.shiftKey && k === 'z'))){ e.preventDefault(); redo(); return }
+            if (!e.ctrlKey && !e.metaKey && k === 'c'){ e.preventDefault(); clearBoard(); return }
+            // tool shortcuts
+            if (!e.ctrlKey && !e.metaKey){
+              if (k === 'b') setTool('brush')
+              else if (k === 'e') setTool('eraser')
+              else if (k === 'r') setTool('rect')
+              else if (k === 'o') setTool('ellipse')
+              else if (k === 'l') setTool('line')
+              else if (k === 't') setTool('text')
+              else if (k === 's') setTool('select')
+              else if (k === 'f') setTool('fill')
+              else if (k === 'x') exportPNG()
+            }
+            // escape closes text input or clears selection
+            if (k === 'escape'){ if (textInput.visible) setTextInput({ visible:false, x:0,y:0,value:'' }); if (selectionRect.current) { selectionRect.current = null; selectionImage.current = null; setLiveMessage('Selection cleared') } }
           }} />
+        {textInput.visible && (
+          <input autoFocus value={textInput.value} onChange={(e)=> setTextInput(t => ({...t, value: e.target.value}))} onKeyDown={(e)=>{
+            if (e.key === 'Enter'){ // commit
+              const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d')
+              if (ctx){ ctx.fillStyle = color; ctx.font = `${16 * (c.width/720)}px sans-serif`; ctx.fillText(textInput.value || '', textInput.x, textInput.y + 16) }
+              setTextInput({ visible:false, x:0,y:0,value:'' })
+            }
+            if (e.key === 'Escape') setTextInput({ visible:false, x:0,y:0,value:'' })
+          }} onBlur={()=>{ if (textInput.value){ const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d'); if (ctx){ ctx.fillStyle = color; ctx.font = `${16 * (c.width/720)}px sans-serif`; ctx.fillText(textInput.value || '', textInput.x, textInput.y + 16) } } setTextInput({ visible:false, x:0,y:0,value:'' }) }}
+            style={{position: 'absolute', left: textInput.x, top: textInput.y, zIndex: 50, border: '1px solid #ccc', padding: '4px'}} />
+        )}
       </div>
 
       {inviteOpen && (

@@ -516,8 +516,27 @@ app.post('/api/rooms/:id/invite', (req, res)=>{
 io.on('connection', (socket) => {
   console.log('socket connected', socket.id)
   socket.on('join', (roomId) => {
-    socket.join(roomId)
-    socket.to(roomId).emit('peer-joined', { id: socket.id })
+    // Verify token from handshake cookies (double as socket auth)
+    try{
+      const cookie = socket.handshake.headers && socket.handshake.headers.cookie
+      let token = null
+      if (cookie){
+        const m = cookie.match(/(?:^|; )token=([^;]+)/)
+        if (m) token = decodeURIComponent(m[1])
+      }
+      if (!token){
+        socket.emit('join-error', { message: 'unauthorized' })
+        return
+      }
+      try{
+        jwt.verify(token, JWT_SECRET)
+      }catch(e){ socket.emit('join-error', { message: 'invalid_token' }); return }
+      socket.join(roomId)
+      socket.to(roomId).emit('peer-joined', { id: socket.id })
+    }catch(err){
+      console.warn('join verify failed', err)
+      socket.emit('join-error', { message: 'error' })
+    }
   })
   socket.on('draw', (data) => {
     const { room } = data
