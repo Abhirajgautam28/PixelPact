@@ -7,7 +7,7 @@ import { createRequire } from 'module'
 // Simple wrapper: ensure our preload is included in NODE_OPTIONS and try a programmatic
 // invocation of Vitest. If that fails we fall back to a shell `npx vitest` invocation.
 const projectRoot = process.cwd()
-const preloadPath = path.resolve(projectRoot, 'src', 'test-preload.js')
+const preloadPath = path.resolve(projectRoot, 'src', 'test-preload.cjs')
 
 const env = { ...process.env }
 const existing = env.NODE_OPTIONS ? env.NODE_OPTIONS + ' ' : ''
@@ -20,7 +20,9 @@ const vitestArgs = argv.length ? argv : ['run']
 // Preload the test-preload module so early warnings are suppressed when running programmatically
 async function ensurePreload(){
 	try{
-		await import(path.resolve(projectRoot, 'src', 'test-preload.js'))
+		// Try dynamic import of preload for programmatic runs; importing a .cjs from ESM
+		// is supported by Node and returns the CommonJS exports as a namespace.
+		await import(path.resolve(projectRoot, 'src', 'test-preload.cjs'))
 	}catch(e){ /* ignore preload errors */ }
 }
 async function runProgrammatic(){

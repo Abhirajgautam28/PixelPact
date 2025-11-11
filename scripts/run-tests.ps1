@@ -1,6 +1,6 @@
 # PowerShell script to run tests with preload
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$preload = Join-Path $projectRoot 'src\test-preload.js'
+$preload = Join-Path $projectRoot 'src\test-preload.cjs'
 
 if (-not [string]::IsNullOrEmpty($env:NODE_OPTIONS)) {
     $env:NODE_OPTIONS = "$env:NODE_OPTIONS -r $preload"

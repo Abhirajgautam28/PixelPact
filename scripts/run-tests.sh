@@ -2,7 +2,7 @@
 # Cross-platform test runner for Unix-like systems
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PRELOAD="$PROJECT_ROOT/src/test-preload.js"
+PRELOAD="$PROJECT_ROOT/src/test-preload.cjs"
 
 # Prepend -r preload to NODE_OPTIONS
 if [ -z "$NODE_OPTIONS" ]; then
