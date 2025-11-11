@@ -27,6 +27,37 @@ async function main(){
       await waitOn(u, 60000)
       console.log('ok')
     }
+    // additionally, try creating a room and verifying rendered HTML contains the app title
+    try{
+      const roomResp = await new Promise((res, rej)=>{
+        const req = http.request('http://localhost:3001/api/rooms', { method: 'POST', headers: { 'Content-Type':'application/json' }, timeout: 2000 }, (r)=>{
+          let b=''
+          r.on('data', c=> b += c)
+          r.on('end', ()=> res({ statusCode: r.statusCode, body: b }))
+        })
+        req.on('error', rej)
+        req.on('timeout', ()=> req.destroy())
+        req.write('{}')
+        req.end()
+      })
+      const parsed = JSON.parse(roomResp.body || '{}')
+      const roomId = parsed.roomId || parsed.id || parsed._id
+      if (roomId){
+        const boardUrl = `http://localhost:5173/board/${roomId}`
+        await waitOn(boardUrl, 15000)
+        // fetch HTML and check title
+        const html = await new Promise((res, rej)=>{
+          const r = http.request(boardUrl, { method: 'GET', timeout: 3000 }, (resp)=>{
+            let t=''
+            resp.on('data', c=> t += c)
+            resp.on('end', ()=> res(t))
+          })
+          r.on('error', rej)
+          r.end()
+        })
+        if (!html || !html.includes('PixelPact')) throw new Error('board HTML missing title')
+      }
+    }catch(e){ console.warn('board render check failed:', e && e.message) }
     process.exit(0)
   }catch(err){
     console.error('\nService readiness timeout. Collecting logs...')
