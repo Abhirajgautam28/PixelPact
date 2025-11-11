@@ -90,13 +90,25 @@ export default function Whiteboard(){
   useEffect(()=>{
     const c = canvasRef.current
     if (!c) return
-    const resize = ()=>{
-      c.width = c.clientWidth * (window.devicePixelRatio || 1)
-      c.height = c.clientHeight * (window.devicePixelRatio || 1)
+    const configureCanvas = (preserve = true) => {
+      try{
+        const dpr = window.devicePixelRatio || 1
+        let prevData = null
+        if (preserve){ try{ prevData = c.toDataURL() }catch(e){ prevData = null } }
+        const cssW = c.clientWidth || Math.max(300, Math.floor(window.innerWidth * 0.8))
+        const cssH = c.clientHeight || Math.max(200, Math.floor(window.innerHeight * 0.7))
+        c.width = Math.max(1, Math.floor(cssW * dpr))
+        c.height = Math.max(1, Math.floor(cssH * dpr))
+        c.style.width = cssW + 'px'
+        c.style.height = cssH + 'px'
+        const ctx = c.getContext && c.getContext('2d')
+        if (ctx){ ctx.setTransform(dpr,0,0,dpr,0,0); if (prevData){ const img = new Image(); img.onload = ()=>{ try{ ctx.clearRect(0,0,cssW,cssH); ctx.drawImage(img,0,0,cssW,cssH) }catch(e){} }; img.src = prevData } }
+      }catch(e){ /* non-fatal */ }
     }
-    resize()
-    window.addEventListener('resize', resize)
-    return ()=> window.removeEventListener('resize', resize)
+    configureCanvas(true)
+    const onResize = ()=> configureCanvas(true)
+    window.addEventListener('resize', onResize)
+    return ()=> window.removeEventListener('resize', onResize)
   }, [])
 
   // load initial template image for the room (if any) when visiting /board/:id
