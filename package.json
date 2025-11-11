@@ -14,8 +14,9 @@
 		"test:watch": "vitest src/__tests__ --watch",
 		"smoke-test": "node scripts/api-smoke.js",
 		"start:server:background": "powershell -NoProfile -Command \"Start-Process -FilePath node -ArgumentList 'server/index.js' -WorkingDirectory (Get-Location)\"",
-		"e2e:run": "echo \"e2e disabled in production package.json\"",
-		"e2e:screenshots": "echo \"e2e disabled in production package.json\""
+		"e2e:install": "npx playwright install --with-deps",
+		"e2e:run": "npx playwright test",
+		"e2e:screenshots": "npx playwright test --project=chromium --update-snapshots"
 	},
 	"bin": {
 		"manage-testimonials": "scripts/manage-testimonials.js"
@@ -59,6 +60,7 @@
 		"tailwindcss": "3.4.8",
 		"vite": "^7.1.12",
 		"vitest": "^4.0.2",
-		"node-fetch": "^3.3.2"
+		"node-fetch": "^3.3.2",
+		"@playwright/test": "^1.40.0"
 	}
 }
