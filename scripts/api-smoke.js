@@ -37,10 +37,11 @@ async function main(){
     console.log('Create room OK', createJson);
 
     console.log('Smoke test passed');
-    process.exit(0);
+    // give node a short moment to close any pending handles on Windows to avoid libuv assertions
+    setTimeout(() => process.exit(0), 100);
   }catch(err){
     console.error('Smoke test failed:', err);
-    process.exit(2);
+    setTimeout(() => process.exit(2), 100);
   }
 }
 
