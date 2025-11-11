@@ -24,7 +24,7 @@ export async function logRouteError(err, meta = {}){
     fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: data }).catch(()=>{})
   }catch(e){
     // swallow logger errors
-    // eslint-disable-next-line no-console
+     
     console.warn('logRouteError failed', e)
   }
 }
@@ -50,7 +50,7 @@ export async function logUnhandledError(err, meta = {}){
     }
     fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: data }).catch(()=>{})
   }catch(e){
-    // eslint-disable-next-line no-console
+     
     console.warn('logUnhandledError failed', e)
   }
 }

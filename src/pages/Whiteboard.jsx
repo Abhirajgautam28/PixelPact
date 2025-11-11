@@ -3,6 +3,19 @@ import { useToast } from '../components/ToastContext'
 import { io } from 'socket.io-client'
 
 export default function Whiteboard(){
+  // helper to enforce deterministic drawing settings across browsers
+  function applyCtxDefaults(ctx){
+    try{
+      if (!ctx) return
+      // disable smoothing to reduce cross-browser anti-aliasing differences
+      if (typeof ctx.imageSmoothingEnabled !== 'undefined') ctx.imageSmoothingEnabled = false
+      // prefer round joins for consistent pixel output
+      try{ ctx.lineJoin = 'round' }catch(e){}
+      try{ ctx.lineCap = ctx.lineCap || 'round' }catch(e){}
+      // bounding the miterLimit reduces cross-engine differences on joins
+      try{ if (typeof ctx.miterLimit !== 'undefined') ctx.miterLimit = Math.max(1, Math.round(ctx.miterLimit || 2)); else ctx.miterLimit = 2 }catch(e){}
+    }catch(e){}
+  }
   const canvasRef = useRef(null)
   const toast = useToast()
   const [socket, setSocket] = useState(null)
@@ -61,14 +74,21 @@ export default function Whiteboard(){
         return
       }
       if (data.from && data.to){
-        ctx.save()
-        ctx.strokeStyle = data.color || '#000'
-        ctx.lineWidth = data.lineWidth || 2
-        ctx.beginPath()
-        ctx.moveTo(data.from.x, data.from.y)
-        ctx.lineTo(data.to.x, data.to.y)
-        ctx.stroke()
-        ctx.restore()
+        try{
+          ctx.save()
+          applyCtxDefaults(ctx)
+          ctx.strokeStyle = data.color || '#000'
+          ctx.lineWidth = Math.max(1, Math.round(data.lineWidth || 2))
+          ctx.beginPath()
+          const fx = Math.round(data.from.x)
+          const fy = Math.round(data.from.y)
+          const tx = Math.round(data.to.x)
+          const ty = Math.round(data.to.y)
+          ctx.moveTo(fx, fy)
+          ctx.lineTo(tx, ty)
+          ctx.stroke()
+          ctx.restore()
+        }catch(e){}
       }
     })
     s.on('clear', (data)=>{
@@ -102,7 +122,13 @@ export default function Whiteboard(){
         c.style.width = cssW + 'px'
         c.style.height = cssH + 'px'
         const ctx = c.getContext && c.getContext('2d')
-        if (ctx){ ctx.setTransform(dpr,0,0,dpr,0,0); if (prevData){ const img = new Image(); img.onload = ()=>{ try{ ctx.clearRect(0,0,cssW,cssH); ctx.drawImage(img,0,0,cssW,cssH) }catch(e){} }; img.src = prevData } }
+        if (ctx){
+          ctx.setTransform(dpr,0,0,dpr,0,0)
+          applyCtxDefaults(ctx)
+          // if the canvas had no prior content, paint a deterministic white background
+          if (!prevData){ try{ ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cssW,cssH) }catch(e){} }
+          if (prevData){ const img = new Image(); img.onload = ()=>{ try{ ctx.clearRect(0,0,cssW,cssH); ctx.drawImage(img,0,0,cssW,cssH) }catch(e){} }; img.src = prevData }
+        }
       }catch(e){ /* non-fatal */ }
     }
     configureCanvas(true)
@@ -234,17 +260,24 @@ export default function Whiteboard(){
     const ctx = c.getContext && c.getContext('2d')
     if(!ctx) return
     ctx.save()
+    applyCtxDefaults(ctx)
     if (opts.eraser) ctx.globalCompositeOperation = 'destination-out'
     // brush types
     if (opts.brush === 'pencil') ctx.lineCap = 'butt'
     else if (opts.brush === 'butt') ctx.lineCap = 'butt'
     else ctx.lineCap = 'round'
     ctx.strokeStyle = opts.color || color
-    ctx.lineWidth = opts.size || size
+    // force integer lineWidth for deterministic rendering across engines
+    ctx.lineWidth = Math.max(1, Math.round(opts.size || size))
     if (opts.brush === 'marker') { ctx.globalAlpha = 0.6 }
     ctx.beginPath()
-    ctx.moveTo(a.x, a.y)
-    ctx.lineTo(b.x, b.y)
+    // round coordinates to pixel-aligned integers to reduce subpixel anti-alias differences
+    const ax = Math.round(a.x)
+    const ay = Math.round(a.y)
+    const bx = Math.round(b.x)
+    const by = Math.round(b.y)
+    ctx.moveTo(ax, ay)
+    ctx.lineTo(bx, by)
     ctx.stroke()
     ctx.restore()
   }
@@ -265,7 +298,8 @@ export default function Whiteboard(){
           const x = pos.x + Math.cos(angle) * dist
           const y = pos.y + Math.sin(angle) * dist
           ctx.fillStyle = color
-          ctx.fillRect(x, y, 1, 1)
+          // align spray dots to integer pixels
+          ctx.fillRect(Math.round(x), Math.round(y), 1, 1)
         }
         if (socket && socket.connected) socket.emit('draw', { room: currentLayer, from: last.current, to: pos, color, lineWidth: size })
         last.current = pos
@@ -408,9 +442,10 @@ export default function Whiteboard(){
     if (w <= 0 || h <= 0) return
     pushUndo()
     const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d')
-    const tmp = document.createElement('canvas')
-    tmp.width = w; tmp.height = h
-    const tctx = tmp.getContext('2d')
+  const tmp = document.createElement('canvas')
+  tmp.width = w; tmp.height = h
+  const tctx = tmp.getContext('2d')
+  applyCtxDefaults(tctx)
     tctx.putImageData(ctx.getImageData(x,y,w,h), 0,0)
     // resize main canvas to cropped size
     c.width = w; c.height = h
@@ -424,9 +459,10 @@ export default function Whiteboard(){
     try{
       pushUndo()
       const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d')
-      const tmp = document.createElement('canvas')
-      tmp.width = c.height; tmp.height = c.width
-      const tctx = tmp.getContext('2d')
+  const tmp = document.createElement('canvas')
+  tmp.width = c.height; tmp.height = c.width
+  const tctx = tmp.getContext('2d')
+  applyCtxDefaults(tctx)
       tctx.translate(tmp.width/2, tmp.height/2)
       tctx.rotate(Math.PI/2)
       tctx.drawImage(c, -c.width/2, -c.height/2)
@@ -441,9 +477,10 @@ export default function Whiteboard(){
     try{
       pushUndo()
       const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d')
-      const tmp = document.createElement('canvas')
-      tmp.width = c.width; tmp.height = c.height
-      const tctx = tmp.getContext('2d')
+  const tmp = document.createElement('canvas')
+  tmp.width = c.width; tmp.height = c.height
+  const tctx = tmp.getContext('2d')
+  applyCtxDefaults(tctx)
       tctx.translate(tmp.width, 0); tctx.scale(-1,1)
       tctx.drawImage(c, 0,0)
       ctx.clearRect(0,0,c.width,c.height); ctx.drawImage(tmp, 0,0)
@@ -455,9 +492,10 @@ export default function Whiteboard(){
     try{
       pushUndo()
       const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d')
-      const tmp = document.createElement('canvas')
-      tmp.width = c.width; tmp.height = c.height
-      const tctx = tmp.getContext('2d')
+  const tmp = document.createElement('canvas')
+  tmp.width = c.width; tmp.height = c.height
+  const tctx = tmp.getContext('2d')
+  applyCtxDefaults(tctx)
       tctx.translate(0, tmp.height); tctx.scale(1,-1)
       tctx.drawImage(c, 0,0)
       ctx.clearRect(0,0,c.width,c.height); ctx.drawImage(tmp, 0,0)
@@ -472,6 +510,7 @@ export default function Whiteboard(){
         const img = new Image(); img.onload = ()=>{
           pushUndo()
           const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d')
+          applyCtxDefaults(ctx)
           // draw centered and scaled to fit
           const ratio = Math.min(c.width / img.width, c.height / img.height)
           const w = img.width * ratio; const h = img.height * ratio
@@ -491,9 +530,10 @@ export default function Whiteboard(){
       const newH = parseInt(prompt('New height (px)', String(c.height)) || String(c.height), 10)
       if (!newW || !newH) return
       pushUndo()
-      const tmp = document.createElement('canvas')
-      tmp.width = newW; tmp.height = newH
-      const tctx = tmp.getContext('2d')
+  const tmp = document.createElement('canvas')
+  tmp.width = newW; tmp.height = newH
+  const tctx = tmp.getContext('2d')
+  applyCtxDefaults(tctx)
       tctx.drawImage(c, 0,0, newW, newH)
       c.width = newW; c.height = newH
       const ctx = c.getContext('2d')
@@ -576,10 +616,11 @@ export default function Whiteboard(){
     try{
       const c = canvasRef.current
       const scale = 2
-      const tmp = document.createElement('canvas')
-      tmp.width = c.width * scale
-      tmp.height = c.height * scale
-      const ctx = tmp.getContext && tmp.getContext('2d')
+  const tmp = document.createElement('canvas')
+  tmp.width = c.width * scale
+  tmp.height = c.height * scale
+  const ctx = tmp.getContext && tmp.getContext('2d')
+  applyCtxDefaults(ctx)
       if (!ctx) throw new Error('no-canvas')
       // draw scaled
       ctx.drawImage(c, 0, 0, tmp.width, tmp.height)
@@ -601,22 +642,53 @@ export default function Whiteboard(){
           <div className="text-sm text-slate-500">Presence: {presence.length}</div>
         </div>
         <div className="flex items-center gap-2">
-          {/* toolbar: tool selection, color, size, clear/export */}
-          <div ref={toolbarRef} className="flex items-center gap-4" role="toolbar" aria-label="Whiteboard tools" onKeyDown={(e)=>{
-            // arrow navigation between toolbar buttons
-            const focusables = Array.from(toolbarRef.current?.querySelectorAll('button, input, select'))
+          {/* Keep lightweight header actions in top-right; full toolbar moved to left sidebar below */}
+          <div aria-live="polite" className="sr-only">{liveMessage}</div>
+          <button onClick={undo} className="px-3 py-1 bg-slate-100 rounded">Undo</button>
+          <button onClick={redo} className="px-3 py-1 bg-slate-100 rounded">Redo</button>
+          {selectionRect.current && <button onClick={deleteSelection} className="px-3 py-1 bg-amber-100 rounded">Delete Selection</button>}
+          <button onClick={()=> setCurrentLayer(l => l === 'default' ? 'annotations' : 'default')} className="px-3 py-1 bg-slate-100 rounded">Toggle Layer</button>
+          <button onClick={createInvite} className="px-3 py-1 bg-indigo-600 text-white rounded">Invite</button>
+        </div>
+      </div>
+
+      {/* Layout: left sidebar (toolbar) + main canvas area */}
+      <div className="flex gap-4">
+        <aside className="w-72 p-2" aria-label="Whiteboard sidebar">
+          {/* Moved toolbar into left sidebar. Keep same DOM and handlers to preserve test hooks. */}
+          <div ref={toolbarRef} className="flex flex-col gap-4" role="toolbar" aria-label="Whiteboard tools" aria-orientation="vertical" onKeyDown={(e)=>{
+            // safe arrow/home/end navigation between toolbar controls (vertical)
+            const nodeList = toolbarRef.current ? toolbarRef.current.querySelectorAll('button, input, select') : []
+            const focusables = Array.from(nodeList)
+            if (!focusables.length) return
             const idx = focusables.indexOf(document.activeElement)
-            if (e.key === 'ArrowRight'){
-              e.preventDefault(); const next = focusables[(idx+1) % focusables.length]; next?.focus()
+            const key = e.key
+            // move forward (down)
+            if (key === 'ArrowDown' || key === 'ArrowRight'){
+              e.preventDefault()
+              const next = idx >= 0 ? focusables[(idx+1) % focusables.length] : focusables[0]
+              next?.focus()
+              return
             }
-            if (e.key === 'ArrowLeft'){
-              e.preventDefault(); const prev = focusables[(idx-1 + focusables.length) % focusables.length]; prev?.focus()
+            // move backward (up)
+            if (key === 'ArrowUp' || key === 'ArrowLeft'){
+              e.preventDefault()
+              const prev = idx >= 0 ? focusables[(idx-1 + focusables.length) % focusables.length] : focusables[focusables.length - 1]
+              prev?.focus()
+              return
+            }
+            // jump to first/last
+            if (key === 'Home'){
+              e.preventDefault(); focusables[0]?.focus(); return
+            }
+            if (key === 'End'){
+              e.preventDefault(); focusables[focusables.length - 1]?.focus(); return
             }
           }}>
             {/* Tools card */}
             <div className="p-2 border rounded bg-white shadow-sm">
               <div className="text-xs font-medium mb-1">Tools</div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 <button aria-label="Brush tool" title="Brush (B)" onClick={()=> setTool('brush')} aria-pressed={tool==='brush'} className={`px-2 py-1 rounded ${tool==='brush'?'bg-slate-200':''}`}>Brush</button>
                 <button aria-label="Pencil tool" title="Pencil" onClick={()=> setTool('pencil')} aria-pressed={tool==='pencil'} className={`px-2 py-1 rounded ${tool==='pencil'?'bg-slate-200':''}`}>Pencil</button>
                 <button aria-label="Marker tool" title="Marker" onClick={()=> setTool('marker')} aria-pressed={tool==='marker'} className={`px-2 py-1 rounded ${tool==='marker'?'bg-slate-200':''}`}>Marker</button>
@@ -678,7 +750,6 @@ export default function Whiteboard(){
                 <input aria-label="Primary color" title="Primary color" type="color" value={color} onChange={(e)=> setColor(e.target.value)} className="w-8 h-8 p-0 border-0" />
                 {/* Secondary color shown as swatch button. Use programmatic picker on click to avoid extra input[type=color] in DOM which breaks strict selectors in tests. */}
                 <button aria-label="Secondary color swatch" title="Secondary color" onClick={()=>{
-                  // create a temporary color input to pick a color
                   const inp = document.createElement('input')
                   inp.type = 'color'
                   inp.value = secondaryColor
@@ -689,14 +760,14 @@ export default function Whiteboard(){
                   inp.addEventListener('change', ()=> { setSecondaryColor(inp.value); inp.remove() })
                   inp.click()
                 }} className="w-8 h-8 p-0 border rounded" style={{background: secondaryColor, border: '1px solid #ccc'}} />
-                <button onClick={()=> { const t=color; setColor(secondaryColor); setSecondaryColor(t) }} className="px-2 py-1 rounded">Swap</button>
+                <button aria-label="Swap primary and secondary colors" onClick={()=> { const t=color; setColor(secondaryColor); setSecondaryColor(t) }} className="px-2 py-1 rounded">Swap</button>
               </div>
             </div>
 
             {/* Text & actions card */}
             <div className="p-2 border rounded bg-white shadow-sm">
               <div className="text-xs font-medium mb-1">Text / Actions</div>
-              <div className="flex gap-1 items-center">
+              <div className="flex gap-1 items-center flex-wrap">
                 <button onClick={()=> setTool('text')} className={`px-2 py-1 rounded ${tool==='text'?'bg-slate-200':''}`}>Text</button>
                 <select value={fontFamily} onChange={(e)=> setFontFamily(e.target.value)} className="px-2 py-1 border rounded">
                   <option value="sans-serif">Sans</option>
@@ -716,56 +787,52 @@ export default function Whiteboard(){
               </div>
             </div>
           </div>
-          <div aria-live="polite" className="sr-only">{liveMessage}</div>
-          <button onClick={undo} className="px-3 py-1 bg-slate-100 rounded">Undo</button>
-          <button onClick={redo} className="px-3 py-1 bg-slate-100 rounded">Redo</button>
-          {selectionRect.current && <button onClick={deleteSelection} className="px-3 py-1 bg-amber-100 rounded">Delete Selection</button>}
-          <button onClick={()=> setCurrentLayer(l => l === 'default' ? 'annotations' : 'default')} className="px-3 py-1 bg-slate-100 rounded">Toggle Layer</button>
-          <button onClick={createInvite} className="px-3 py-1 bg-indigo-600 text-white rounded">Invite</button>
-        </div>
-      </div>
+        </aside>
 
-      <div ref={containerRef} style={{height: '70vh', position: 'relative'}} className="rounded border overflow-hidden">
-        <canvas ref={canvasRef} style={{width: '100%', height: '100%'}} onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={move} onTouchEnd={end}
-          tabIndex={0} role="application" aria-label="Whiteboard canvas" onKeyDown={(e)=>{
-            const k = e.key.toLowerCase()
-            // basic keyboard shortcuts: Ctrl+Z undo, Ctrl+Y redo, C clear
-            if ((e.ctrlKey || e.metaKey) && k === 'z'){ e.preventDefault(); undo(); return }
-            if ((e.ctrlKey || e.metaKey) && (k === 'y' || (e.shiftKey && k === 'z'))){ e.preventDefault(); redo(); return }
-            if (!e.ctrlKey && !e.metaKey && k === 'c'){ e.preventDefault(); clearBoard(); return }
-            // tool shortcuts
-            if (!e.ctrlKey && !e.metaKey){
-              if (k === 'b') setTool('brush')
-              else if (k === 'e') setTool('eraser')
-              else if (k === 'r') setTool('rect')
-              else if (k === 'o') setTool('ellipse')
-              else if (k === 'l') setTool('line')
-              else if (k === 't') setTool('text')
-              else if (k === 's') setTool('select')
-              else if (k === 'f') setTool('fill')
-              else if (k === 'i') setTool('pipette')
-              else if (k === 'x') exportPNG()
-            }
-            // escape closes text input or clears selection
-            if (k === 'escape'){ if (textInput.visible) setTextInput({ visible:false, x:0,y:0,value:'' }); if (selectionRect.current) { selectionRect.current = null; selectionImage.current = null; setLiveMessage('Selection cleared') } }
-          }} />
-        {textInput.visible && (
-          <input autoFocus value={textInput.value} onChange={(e)=> setTextInput(t => ({...t, value: e.target.value}))} onKeyDown={(e)=>{
-            if (e.key === 'Enter'){ // commit
-              const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d')
-              if (ctx){
-                ctx.fillStyle = color
-                const fs = fontSize * (c.width/720)
-                const style = `${fontBold? 'bold ': ''}${fontItalic? 'italic ': ''}`
-                ctx.font = `${style}${fs}px ${fontFamily}`
-                ctx.fillText(textInput.value || '', textInput.x, textInput.y + fs)
-              }
-              setTextInput({ visible:false, x:0,y:0,value:'' })
-            }
-            if (e.key === 'Escape') setTextInput({ visible:false, x:0,y:0,value:'' })
-          }} onBlur={()=>{ if (textInput.value){ const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d'); if (ctx){ const fs = fontSize * (c.width/720); const style = `${fontBold? 'bold ': ''}${fontItalic? 'italic ': ''}`; ctx.fillStyle = color; ctx.font = `${style}${fs}px ${fontFamily}`; ctx.fillText(textInput.value || '', textInput.x, textInput.y + fs) } } setTextInput({ visible:false, x:0,y:0,value:'' }) }}
-            style={{position: 'absolute', left: textInput.x, top: textInput.y, zIndex: 50, border: '1px solid #ccc', padding: '4px'}} />
-        )}
+        <div className="flex-1">
+          <div ref={containerRef} style={{height: '70vh', position: 'relative'}} className="rounded border overflow-hidden">
+            <canvas ref={canvasRef} style={{width: '100%', height: '100%'}} onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={move} onTouchEnd={end}
+              tabIndex={0} role="application" aria-label="Whiteboard canvas" onKeyDown={(e)=>{
+                const k = e.key.toLowerCase()
+                // basic keyboard shortcuts: Ctrl+Z undo, Ctrl+Y redo, C clear
+                if ((e.ctrlKey || e.metaKey) && k === 'z'){ e.preventDefault(); undo(); return }
+                if ((e.ctrlKey || e.metaKey) && (k === 'y' || (e.shiftKey && k === 'z'))){ e.preventDefault(); redo(); return }
+                if (!e.ctrlKey && !e.metaKey && k === 'c'){ e.preventDefault(); clearBoard(); return }
+                // tool shortcuts
+                if (!e.ctrlKey && !e.metaKey){
+                  if (k === 'b') setTool('brush')
+                  else if (k === 'e') setTool('eraser')
+                  else if (k === 'r') setTool('rect')
+                  else if (k === 'o') setTool('ellipse')
+                  else if (k === 'l') setTool('line')
+                  else if (k === 't') setTool('text')
+                  else if (k === 's') setTool('select')
+                  else if (k === 'f') setTool('fill')
+                  else if (k === 'i') setTool('pipette')
+                  else if (k === 'x') exportPNG()
+                }
+                // escape closes text input or clears selection
+                if (k === 'escape'){ if (textInput.visible) setTextInput({ visible:false, x:0,y:0,value:'' }); if (selectionRect.current) { selectionRect.current = null; selectionImage.current = null; setLiveMessage('Selection cleared') } }
+              }} />
+            {textInput.visible && (
+              <input autoFocus value={textInput.value} onChange={(e)=> setTextInput(t => ({...t, value: e.target.value}))} onKeyDown={(e)=>{
+                if (e.key === 'Enter'){ // commit
+                  const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d')
+                  if (ctx){
+                    ctx.fillStyle = color
+                    const fs = fontSize * (c.width/720)
+                    const style = `${fontBold? 'bold ': ''}${fontItalic? 'italic ': ''}`
+                    ctx.font = `${style}${fs}px ${fontFamily}`
+                    ctx.fillText(textInput.value || '', textInput.x, textInput.y + fs)
+                  }
+                  setTextInput({ visible:false, x:0,y:0,value:'' })
+                }
+                if (e.key === 'Escape') setTextInput({ visible:false, x:0,y:0,value:'' })
+              }} onBlur={()=>{ if (textInput.value){ const c = canvasRef.current; const ctx = c.getContext && c.getContext('2d'); if (ctx){ const fs = fontSize * (c.width/720); const style = `${fontBold? 'bold ': ''}${fontItalic? 'italic ': ''}`; ctx.fillStyle = color; ctx.font = `${style}${fs}px ${fontFamily}`; ctx.fillText(textInput.value || '', textInput.x, textInput.y + fs) } } setTextInput({ visible:false, x:0,y:0,value:'' }) }}
+                style={{position: 'absolute', left: textInput.x, top: textInput.y, zIndex: 50, border: '1px solid #ccc', padding: '4px'}} />
+            )}
+          </div>
+        </div>
       </div>
 
       {inviteOpen && (
