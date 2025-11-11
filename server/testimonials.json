@@ -1,1 +1,7 @@
-[]
+[
+  {
+    "name": "TokenUser",
+    "role": "Dev",
+    "text": "Auth via JWT"
+  }
+]
