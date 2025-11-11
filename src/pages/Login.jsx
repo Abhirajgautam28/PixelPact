@@ -27,6 +27,7 @@ export default function Login(){
       try{ body = await res.json() }catch(e){ /* non-json response */ }
       if (!res.ok){
         const serverMsg = body && (body.message || body.error || body.msg) ? (body.message || body.error || body.msg) : res.statusText || 'Login failed'
+        toast.show(serverMsg, { type: 'error' })
         throw new Error(serverMsg)
       }
       // server sets httpOnly cookie; navigate to room if provided

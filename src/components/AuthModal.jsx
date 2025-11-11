@@ -8,6 +8,7 @@ export default function AuthModal({ open, onClose, onSuccess }){
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const toast = useToast()
+  const [serverMessage, setServerMessage] = useState('')
 
   if (!open) return null
 
@@ -27,13 +28,20 @@ export default function AuthModal({ open, onClose, onSuccess }){
         headers,
         body: JSON.stringify(payload)
       })
-      const body = await res.json()
-      if (!res.ok) throw new Error(body && body.message ? body.message : 'Authentication failed')
+      let body = null
+      try{ body = await res.json() }catch(e){ /* non-json */ }
+      if (!res.ok) {
+        const msg = body && (body.message || body.error || body.msg) ? (body.message || body.error || body.msg) : res.statusText || 'Authentication failed'
+        setServerMessage(msg)
+        throw new Error(msg)
+      }
       // server sets httpOnly cookie; body may contain roomId
       toast.show(tab === 'login' ? 'Signed in' : 'Account created', { type: 'success' })
       onClose()
       onSuccess && onSuccess(body && body.roomId ? body.roomId : null)
     }catch(err){
+      // show error in modal and toast for visibility
+      setServerMessage(err && err.message ? err.message : 'Authentication failed')
       toast.show(err.message || 'Authentication failed', { type: 'error' })
     }finally{ setLoading(false) }
   }
@@ -70,6 +78,7 @@ export default function AuthModal({ open, onClose, onSuccess }){
           <input required type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-2 border rounded" />
           <input required type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-2 border rounded" />
           {error && <div className="text-sm text-red-600">{error}</div>}
+          {serverMessage && <div className="mt-2 p-2 bg-red-50 text-red-700 rounded text-sm">{serverMessage}</div>}
           <div className="flex items-center justify-end">
             <button type="submit" className="px-4 py-2 rounded bg-indigo-600 text-white" disabled={loading}>{loading ? 'Please wait…' : (tab==='login' ? 'Sign in' : 'Create')}</button>
             <button type="button" onClick={()=>{ onClose(); onSuccess && onSuccess(null) }} className="text-sm text-slate-600">Continue as guest</button>
