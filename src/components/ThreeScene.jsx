@@ -42,19 +42,19 @@ export default function ThreeScene({ width = '100%', height = '220px' }){
     ring.position.y = -0.05
     scene.add(ring)
 
-    // Subtle particle field using Points
-    const particleCount = 80
+    // Subtle particle field using Points (increased density, lightweight update)
+    const particleCount = 140
     const positions = new Float32Array(particleCount * 3)
     for(let i=0;i<particleCount;i++){
       const theta = Math.random() * Math.PI * 2
-      const r = 1.6 + (Math.random() - 0.5) * 0.4
+      const r = 1.6 + (Math.random() - 0.5) * 0.5
       positions[i*3 + 0] = Math.cos(theta) * r
-      positions[i*3 + 1] = (Math.random() - 0.5) * 0.6
+      positions[i*3 + 1] = (Math.random() - 0.5) * 0.5
       positions[i*3 + 2] = Math.sin(theta) * r
     }
     const pgeo = new THREE.BufferGeometry()
     pgeo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    const pmat = new THREE.PointsMaterial({ color: 0x93c5fd, size: 0.02, transparent: true, opacity: 0.85 })
+    const pmat = new THREE.PointsMaterial({ color: 0x60a5fa, size: 0.018, transparent: true, opacity: 0.9 })
     const points = new THREE.Points(pgeo, pmat)
     scene.add(points)
 
@@ -74,10 +74,12 @@ export default function ThreeScene({ width = '100%', height = '220px' }){
       camera.position.x += (targetX - camera.position.x) * 0.05
       camera.position.y += (targetY - camera.position.y) * 0.05
       camera.lookAt(0, 0.4, 0)
-      // gentle particle animation
+      // gentle particle animation (small, low-cost motion)
       const pos = pgeo.attributes.position.array
-      for(let i=0;i<particleCount;i++){
-        pos[i*3 + 1] += Math.sin(t + i) * 0.0005
+      for(let i=0;i<particleCount;i+=3){
+        // only update a subset per frame to reduce cost
+        const idx = (i % particleCount)
+        pos[idx*3 + 1] += Math.sin(t + idx) * 0.00035
       }
       pgeo.attributes.position.needsUpdate = true
       renderer.render(scene, camera)
