@@ -14,8 +14,10 @@ test('multi-user draw syncs across sockets', async () => {
   const body = await resp.json()
   const roomId = body.roomId || body.id || body._id
 
-  await pageA.goto(`http://localhost:5173/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
-  await pageB.goto(`http://localhost:5173/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
+  const { waitForFrontend } = await import('./waitForFrontend')
+  const base = await waitForFrontend(pageA, [5173, 4173], 30000)
+  await pageA.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
+  await pageB.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
   await pageA.waitForSelector('canvas')
   await pageB.waitForSelector('canvas')
 

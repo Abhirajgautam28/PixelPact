@@ -128,6 +128,7 @@ export default function Whiteboard(){
           // if the canvas had no prior content, paint a deterministic white background
           if (!prevData){ try{ ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cssW,cssH) }catch(e){} }
           if (prevData){ const img = new Image(); img.onload = ()=>{ try{ ctx.clearRect(0,0,cssW,cssH); ctx.drawImage(img,0,0,cssW,cssH) }catch(e){} }; img.src = prevData }
+          try{ if (c && c.dataset) c.dataset.history = String(Date.now()) }catch(e){}
         }
       }catch(e){ /* non-fatal */ }
     }
@@ -280,6 +281,7 @@ export default function Whiteboard(){
     ctx.lineTo(bx, by)
     ctx.stroke()
     ctx.restore()
+    try{ if (c && c.dataset) c.dataset.history = String(Date.now()) }catch(e){}
   }
 
   function move(e){
@@ -302,6 +304,7 @@ export default function Whiteboard(){
           ctx.fillRect(Math.round(x), Math.round(y), 1, 1)
         }
         if (socket && socket.connected) socket.emit('draw', { room: currentLayer, from: last.current, to: pos, color, lineWidth: size })
+          try{ if (c && c.dataset) c.dataset.history = String(Date.now()) }catch(e){}
         last.current = pos
         return
       }
@@ -381,15 +384,25 @@ export default function Whiteboard(){
       if (!prev || prev.length === 0) return prev
       const lastImg = prev[prev.length - 1]
       try{ setRedoStack(r => [...r, canvasRef.current.toDataURL()]) }catch(e){}
-      // draw lastImg
+      // draw lastImg and prefer img.decode() when available for deterministic completion
       const img = new Image()
-      img.onload = ()=>{
-        const c = canvasRef.current
-        const ctx = c.getContext('2d')
-        ctx.clearRect(0,0,c.width,c.height)
-        ctx.drawImage(img, 0,0, c.width, c.height)
+      const drawImg = () => {
+        try{
+          const c = canvasRef.current
+          const ctx = c.getContext('2d')
+          ctx.clearRect(0,0,c.width,c.height)
+          ctx.drawImage(img, 0,0, c.width, c.height)
+          try{ if (c && c.dataset) c.dataset.history = String(Date.now()) }catch(e){}
+        }catch(e){ }
       }
-      img.src = lastImg
+      if (img.decode) {
+        img.src = lastImg
+        img.decode().then(drawImg).catch(()=>{ /* fallback to onload */ })
+        img.onload = drawImg
+      } else {
+        img.onload = drawImg
+        img.src = lastImg
+      }
       return prev.slice(0, -1)
     })
   }
@@ -400,13 +413,23 @@ export default function Whiteboard(){
       const lastImg = prev[prev.length - 1]
       try{ setUndoStack(u => [...u, canvasRef.current.toDataURL()]) }catch(e){}
       const img = new Image()
-      img.onload = ()=>{
-        const c = canvasRef.current
-        const ctx = c.getContext('2d')
-        ctx.clearRect(0,0,c.width,c.height)
-        ctx.drawImage(img, 0,0, c.width, c.height)
+      const drawImg = () => {
+        try{
+          const c = canvasRef.current
+          const ctx = c.getContext('2d')
+          ctx.clearRect(0,0,c.width,c.height)
+          ctx.drawImage(img, 0,0, c.width, c.height)
+          try{ if (c && c.dataset) c.dataset.history = String(Date.now()) }catch(e){}
+        }catch(e){ }
       }
-      img.src = lastImg
+      if (img.decode) {
+        img.src = lastImg
+        img.decode().then(drawImg).catch(()=>{})
+        img.onload = drawImg
+      } else {
+        img.onload = drawImg
+        img.src = lastImg
+      }
       return prev.slice(0, -1)
     })
   }
@@ -576,6 +599,7 @@ export default function Whiteboard(){
         }
       }
       ctx.putImageData(image, 0,0)
+      try{ if (c && c.dataset) c.dataset.history = String(Date.now()) }catch(e){}
     }catch(e){ console.warn('fill failed', e) }
   }
 
