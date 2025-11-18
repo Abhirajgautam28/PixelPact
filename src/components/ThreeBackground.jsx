@@ -4,7 +4,7 @@ import * as THREE from 'three'
 export default function ThreeBackground({ intensity = 0.6 }){
   const mountRef = useRef(null)
   const composerRef = useRef(null)
-  const fxaaPassRef = useRef(null)
+  const smaaPassRef = useRef(null)
 
   useEffect(()=>{
     const mount = mountRef.current
@@ -79,12 +79,11 @@ export default function ThreeBackground({ intensity = 0.6 }){
 
     async function setupComposer(){
       try{
-        const [{ EffectComposer }, { RenderPass }, { UnrealBloomPass }, { ShaderPass }, { FXAAShader }] = await Promise.all([
+        const [{ EffectComposer }, { RenderPass }, { UnrealBloomPass }, { SMAAPass }] = await Promise.all([
           import('three/examples/jsm/postprocessing/EffectComposer.js'),
           import('three/examples/jsm/postprocessing/RenderPass.js'),
           import('three/examples/jsm/postprocessing/UnrealBloomPass.js'),
-          import('three/examples/jsm/postprocessing/ShaderPass.js'),
-          import('three/examples/jsm/shaders/FXAAShader.js')
+          import('three/examples/jsm/postprocessing/SMAAPass.js')
         ])
 
         composer = new EffectComposer(renderer)
@@ -93,24 +92,28 @@ export default function ThreeBackground({ intensity = 0.6 }){
         const renderPass = new RenderPass(scene, camera)
         composer.addPass(renderPass)
 
-        // Bloom: keep conservative values for performance
-        const bloomStrength = Math.min(Math.max(intensity * 0.9, 0.15), 1.2)
-        const bloomRadius = 0.4
-        const bloomThreshold = 0.2
+        // Bloom: tuned for a balanced visual while keeping perf in mind
+        const bloomStrength = Math.min(Math.max(intensity * 1.05, 0.18), 0.9)
+        const bloomRadius = 0.35
+        const bloomThreshold = 0.18
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), bloomStrength, bloomRadius, bloomThreshold)
         composer.addPass(bloomPass)
 
-        // FXAA for crisp edges on low-res displays
-        fxaaPass = new ShaderPass(FXAAShader)
+        // SMAA: slightly cheaper/quality anti-aliasing pass when available
         const pixelRatio = Math.max(1, Math.min(2, window.devicePixelRatio || 1))
-        fxaaPass.material.uniforms['resolution'].value.set(1 / (mount.clientWidth * pixelRatio), 1 / (mount.clientHeight * pixelRatio))
-        composer.addPass(fxaaPass)
+        let smaaPassInstance = null
+        try{
+          smaaPassInstance = new SMAAPass(mount.clientWidth * pixelRatio, mount.clientHeight * pixelRatio)
+          composer.addPass(smaaPassInstance)
+        }catch(_){
+          // if SMAA constructor shapes differ, ignore and continue
+        }
 
         composerRef.current = composer
-        fxaaPassRef.current = fxaaPass
+        smaaPassRef.current = smaaPassInstance
       }catch(err){
         // if examples are unavailable or dynamic import fails, fall back to renderer
-        console.warn('Three postprocessing setup failed, falling back to direct render:', err)
+        console.warn('Three postprocessing setup failed or SMAA not available, falling back to direct render:', err)
         composer = null
       }
     }
@@ -165,9 +168,9 @@ export default function ThreeBackground({ intensity = 0.6 }){
       if (composerRef.current && typeof composerRef.current.setSize === 'function'){
         composerRef.current.setSize(w, h)
       }
-      if (fxaaPassRef.current && fxaaPassRef.current.material && fxaaPassRef.current.material.uniforms && fxaaPassRef.current.material.uniforms.resolution){
+      if (smaaPassRef.current && typeof smaaPassRef.current.setSize === 'function'){
         const pixelRatio = Math.max(1, Math.min(2, window.devicePixelRatio || 1))
-        fxaaPassRef.current.material.uniforms.resolution.value.set(1 / (w * pixelRatio), 1 / (h * pixelRatio))
+        try{ smaaPassRef.current.setSize(w * pixelRatio, h * pixelRatio) }catch(_){}
       }
     })
     ro.observe(mount)
