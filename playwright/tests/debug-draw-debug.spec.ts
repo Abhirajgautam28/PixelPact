@@ -10,7 +10,9 @@ test('debug draw: capture before/after/afterRedo and write diffs', async ({ page
   const body = await resp.json()
   const roomId = body.roomId || body.id || body._id
 
-  await page.goto(`http://localhost:5173/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
+  const { waitForFrontend } = await import('./waitForFrontend')
+  const base = await waitForFrontend(page, [5173, 4173], 30000)
+  await page.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
   await page.waitForSelector('canvas, [aria-label="Whiteboard canvas"]', { timeout: 20000 })
 
   const canvas = page.locator('canvas')

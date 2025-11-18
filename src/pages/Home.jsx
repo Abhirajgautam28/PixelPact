@@ -9,6 +9,7 @@ import useInView from '../hooks/useInView'
 import useStaggeredInView from '../hooks/useStaggeredInView'
 const LottiePlayer = lazy(()=> import('../components/LottiePlayer'))
 import miniAnim from '../assets/lottie/mini.json'
+import ThreeScene from '../components/ThreeScene'
 import { Link, useNavigate } from 'react-router-dom'
 import { useToast } from '../components/ToastContext'
 import templatesImg from '../assets/images/placeholders/templates.png'

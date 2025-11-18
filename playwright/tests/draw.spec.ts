@@ -15,7 +15,10 @@ test('draw on canvas, undo and redo (pixel-accurate)', async ({ page }) => {
   expect(roomId).toBeTruthy()
 
   // open board
-  await page.goto(`http://localhost:5173/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
+  // wait for frontend before navigating
+  const { waitForFrontend } = await import('./waitForFrontend')
+  const base = await waitForFrontend(page, [5173, 4173], 30000)
+  await page.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
   await page.waitForSelector('canvas, [aria-label="Whiteboard canvas"]', { timeout: 20000 })
 
   const canvas = page.locator('canvas')
@@ -52,7 +55,11 @@ test('draw on canvas, undo and redo (pixel-accurate)', async ({ page }) => {
   await page.keyboard.down('Control')
   await page.keyboard.press('z')
   await page.keyboard.up('Control')
-  await page.waitForTimeout(300)
+  // wait for undo to apply by detecting that the canvas data URL changed
+  await page.waitForFunction((prevDataUrl) => {
+    const c = document.querySelector('canvas') as HTMLCanvasElement | null
+    try { return !!c && c.toDataURL() !== prevDataUrl }catch(e){ return false }
+  }, after, { timeout: 8000 })
   const afterUndo = await page.evaluate(() => {
     const c = document.querySelector('canvas') as HTMLCanvasElement | null
     return c ? c.toDataURL() : ''
@@ -62,7 +69,11 @@ test('draw on canvas, undo and redo (pixel-accurate)', async ({ page }) => {
   await page.keyboard.down('Control')
   await page.keyboard.press('y')
   await page.keyboard.up('Control')
-  await page.waitForTimeout(300)
+  // wait for redo to apply by detecting that the canvas data URL changed
+  await page.waitForFunction((prevDataUrl) => {
+    const c = document.querySelector('canvas') as HTMLCanvasElement | null
+    try { return !!c && c.toDataURL() !== prevDataUrl }catch(e){ return false }
+  }, afterUndo, { timeout: 8000 })
   const afterRedo = await page.evaluate(() => {
     const c = document.querySelector('canvas') as HTMLCanvasElement | null
     return c ? c.toDataURL() : ''
