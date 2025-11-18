@@ -3,10 +3,12 @@ import * as THREE from 'three'
 
 export default function ThreeBackground({ intensity = 0.6 }){
   const mountRef = useRef(null)
+  const composerRef = useRef(null)
+  const fxaaPassRef = useRef(null)
 
   useEffect(()=>{
     const mount = mountRef.current
-    if (!mount) return
+    if (!mount || typeof window === 'undefined') return
 
     // basic scene with layered moving objects and particles for depth
     const scene = new THREE.Scene()
@@ -66,10 +68,55 @@ export default function ThreeBackground({ intensity = 0.6 }){
     const points = new THREE.Points(pgeo, pmat)
     scene.add(points)
 
-    // animation
+    // Animation and pointer
     let req = null
     const clock = new THREE.Clock()
     const pointer = { x: 0.5, y: 0.5 }
+
+    // composer will be created lazily with dynamic imports (examples) for smaller initial bundle
+    let composer
+    let fxaaPass
+
+    async function setupComposer(){
+      try{
+        const [{ EffectComposer }, { RenderPass }, { UnrealBloomPass }, { ShaderPass }, { FXAAShader }] = await Promise.all([
+          import('three/examples/jsm/postprocessing/EffectComposer.js'),
+          import('three/examples/jsm/postprocessing/RenderPass.js'),
+          import('three/examples/jsm/postprocessing/UnrealBloomPass.js'),
+          import('three/examples/jsm/postprocessing/ShaderPass.js'),
+          import('three/examples/jsm/shaders/FXAAShader.js')
+        ])
+
+        composer = new EffectComposer(renderer)
+        composer.setSize(mount.clientWidth, mount.clientHeight)
+
+        const renderPass = new RenderPass(scene, camera)
+        composer.addPass(renderPass)
+
+        // Bloom: keep conservative values for performance
+        const bloomStrength = Math.min(Math.max(intensity * 0.9, 0.15), 1.2)
+        const bloomRadius = 0.4
+        const bloomThreshold = 0.2
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), bloomStrength, bloomRadius, bloomThreshold)
+        composer.addPass(bloomPass)
+
+        // FXAA for crisp edges on low-res displays
+        fxaaPass = new ShaderPass(FXAAShader)
+        const pixelRatio = Math.max(1, Math.min(2, window.devicePixelRatio || 1))
+        fxaaPass.material.uniforms['resolution'].value.set(1 / (mount.clientWidth * pixelRatio), 1 / (mount.clientHeight * pixelRatio))
+        composer.addPass(fxaaPass)
+
+        composerRef.current = composer
+        fxaaPassRef.current = fxaaPass
+      }catch(err){
+        // if examples are unavailable or dynamic import fails, fall back to renderer
+        console.warn('Three postprocessing setup failed, falling back to direct render:', err)
+        composer = null
+      }
+    }
+
+    setupComposer()
+
     function animate(){
       const t = clock.getElapsedTime()
       // rotate groups slowly
@@ -92,7 +139,11 @@ export default function ThreeBackground({ intensity = 0.6 }){
       }
       pgeo.attributes.position.needsUpdate = true
 
-      renderer.render(scene, camera)
+      if (composerRef.current){
+        composerRef.current.render()
+      } else {
+        renderer.render(scene, camera)
+      }
       req = requestAnimationFrame(animate)
     }
     animate()
@@ -111,6 +162,13 @@ export default function ThreeBackground({ intensity = 0.6 }){
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
+      if (composerRef.current && typeof composerRef.current.setSize === 'function'){
+        composerRef.current.setSize(w, h)
+      }
+      if (fxaaPassRef.current && fxaaPassRef.current.material && fxaaPassRef.current.material.uniforms && fxaaPassRef.current.material.uniforms.resolution){
+        const pixelRatio = Math.max(1, Math.min(2, window.devicePixelRatio || 1))
+        fxaaPassRef.current.material.uniforms.resolution.value.set(1 / (w * pixelRatio), 1 / (h * pixelRatio))
+      }
     })
     ro.observe(mount)
 
@@ -124,6 +182,14 @@ export default function ThreeBackground({ intensity = 0.6 }){
       if (req) cancelAnimationFrame(req)
       ro.disconnect()
       try{ pgeo.dispose(); pmat.dispose(); }catch(e){}
+      // dispose composer and passes if present
+      try{
+        if (composerRef.current){
+          const c = composerRef.current
+          if (c.passes) c.passes.forEach(p => { try{ if (p.dispose) p.dispose(); }catch(_){} })
+          if (c.dispose) c.dispose()
+        }
+      }catch(e){}
       renderer.dispose()
       if (renderer.domElement && mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
     }
