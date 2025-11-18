@@ -10,6 +10,7 @@ import useStaggeredInView from '../hooks/useStaggeredInView'
 const LottiePlayer = lazy(()=> import('../components/LottiePlayer'))
 import miniAnim from '../assets/lottie/mini.json'
 import ThreeScene from '../components/ThreeScene'
+import ThreeBackground from '../components/ThreeBackground'
 import { Link, useNavigate } from 'react-router-dom'
 import { useToast } from '../components/ToastContext'
 import templatesImg from '../assets/images/placeholders/templates.png'
@@ -250,7 +251,10 @@ export default function Home(){
   }, [])
 
   return (
-    <main className="space-y-12" aria-labelledby="home-hero">
+    <main className="space-y-12 relative" aria-labelledby="home-hero">
+      {/* full-page 3D background */}
+      <ThreeBackground />
+      <div style={{ position: 'relative', zIndex: 10 }}>
       {/* Create-room retry modal for server errors */}
       {createRoomError && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -378,6 +382,7 @@ export default function Home(){
           <Link to="/demo" className="px-6 py-3 rounded-md border border-slate-200 text-slate-700">Launch demo</Link>
         </div>
       </div>
+    </div>
     </main>
   )
 }
