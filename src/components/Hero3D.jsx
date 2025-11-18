@@ -1,7 +1,15 @@
 import React, { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
-export default function Hero3D({ className = '', style = {} }){
+export default function Hero3D({
+  className = '',
+  style = {},
+  color = 0x9b5cff,
+  emissive = 0x3b0066,
+  shape = 'lathe', // 'torusknot' or 'lathe'
+  pCount = 200,
+  keyLightColor = 0xffd8b3,
+} = {}){
   const ref = useRef(null)
 
   useEffect(()=>{
@@ -20,18 +28,30 @@ export default function Hero3D({ className = '', style = {} }){
     mount.appendChild(renderer.domElement)
 
     // lights
-    const amb = new THREE.AmbientLight(0xffffff, 0.6)
+    const amb = new THREE.AmbientLight(0xffffff, 0.56)
     scene.add(amb)
-    const key = new THREE.DirectionalLight(0xffffff, 0.9)
+    const key = new THREE.DirectionalLight(keyLightColor, 1.0)
     key.position.set(5, 5, 5)
     scene.add(key)
-    const fill = new THREE.DirectionalLight(0x6bb9ff, 0.4)
+    const fill = new THREE.DirectionalLight(0x8ed0ff, 0.35)
     fill.position.set(-3, -2, 2)
     scene.add(fill)
 
-    // central mesh (rounded torus-like ring) - tuned for Dora-like purple/blue palette
-    const geo = new THREE.TorusKnotGeometry(1.05, 0.16, 128, 32, 2, 3)
-    const mat = new THREE.MeshStandardMaterial({ color: 0x5b21b6, metalness: 0.32, roughness: 0.22, emissive: 0x2a0560 })
+    // central mesh (rounded torus-like ring) - tunable via props
+    let geo
+    if (shape === 'lathe'){
+      // create a smooth lathe/profile for a softer Dora-like object
+      const pts = []
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 7) * Math.PI
+        const r = 0.6 + Math.sin(a) * 0.5
+        pts.push(new THREE.Vector2(r, (i / 7) * 1.6 - 0.8))
+      }
+      geo = new THREE.LatheGeometry(pts, 64)
+    } else {
+      geo = new THREE.TorusKnotGeometry(1.05, 0.16, 128, 32, 2, 3)
+    }
+    const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.32, roughness: 0.22, emissive })
     const mesh = new THREE.Mesh(geo, mat)
     mesh.rotation.x = 0.8
     mesh.rotation.y = 0.6
@@ -54,16 +74,16 @@ export default function Hero3D({ className = '', style = {} }){
     scene.add(shards)
 
     // particles
-    const pCount = 120
-    const pPos = new Float32Array(pCount * 3)
-    for(let i=0;i<pCount;i++){
+    const particleCount = Math.max(40, Math.min(400, pCount))
+    const pPos = new Float32Array(particleCount * 3)
+    for(let i=0;i<particleCount;i++){
       pPos[i*3+0] = (Math.random() - 0.5) * 8
-      pPos[i*3+1] = (Math.random() - 0.5) * 4
+      pPos[i*3+1] = (Math.random() - 0.5) * 3.8
       pPos[i*3+2] = (Math.random() - 0.5) * 6
     }
     const pGeo = new THREE.BufferGeometry()
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3))
-    const pMat = new THREE.PointsMaterial({ color: 0xc7d2fe, size: 0.015, transparent: true, opacity: 0.82 })
+    const pMat = new THREE.PointsMaterial({ color: 0xc7d2fe, size: 0.014, transparent: true, opacity: 0.82 })
     const points = new THREE.Points(pGeo, pMat)
     scene.add(points)
 
@@ -88,7 +108,7 @@ export default function Hero3D({ className = '', style = {} }){
 
       // particle drift
       const arr = pGeo.attributes.position.array
-      for(let i=0;i<pCount;i++) arr[i*3+1] += Math.sin(t*0.18 + i) * 0.00025
+      for(let i=0;i<particleCount;i++) arr[i*3+1] += Math.sin(t*0.18 + i) * 0.00025
       pGeo.attributes.position.needsUpdate = true
 
       renderer.render(scene, camera)
@@ -121,7 +141,8 @@ export default function Hero3D({ className = '', style = {} }){
       if (raf) cancelAnimationFrame(raf)
       ro.disconnect()
       try{ pGeo.dispose(); pMat && pMat.dispose(); }catch(e){}
-      try{ geo.dispose(); mat.dispose(); }catch(e){}
+      try{ if (geo && geo.dispose) geo.dispose(); }catch(e){}
+      try{ if (mat && mat.dispose) mat.dispose(); }catch(e){}
       renderer.dispose()
       if (renderer.domElement && mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
     }

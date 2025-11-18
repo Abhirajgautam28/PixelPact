@@ -255,8 +255,8 @@ export default function Home(){
       {/* full-page 3D hero background */}
       <div style={{ position: 'relative', zIndex: 0 }}>
         <Hero3D />
-        {/* subtle overlay: soft blur + vignette to match Dora-like styling */}
-        <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.18) 40%, rgba(4,6,20,0.6) 100%)', backdropFilter: 'blur(6px)', mixBlendMode: 'overlay' }} />
+        {/* subtle overlay: stronger soft blur + vignette for Dora-like styling */}
+        <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.24) 35%, rgba(6,8,28,0.72) 100%)', backdropFilter: 'blur(8px)', mixBlendMode: 'overlay' }} />
       </div>
       <div style={{ position: 'relative', zIndex: 10 }}>
       {/* Create-room retry modal for server errors */}
