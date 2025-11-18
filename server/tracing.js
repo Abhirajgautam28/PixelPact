@@ -1,38 +1,56 @@
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
-import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base'
-import { Resource } from '@opentelemetry/resources'
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
+import { ConsoleSpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+let Resource = null
+let SemanticResourceAttributes = null
+try{ Resource = require('@opentelemetry/resources').Resource }catch(e){ Resource = null }
+try{ SemanticResourceAttributes = require('@opentelemetry/semantic-conventions').SemanticResourceAttributes }catch(e){ SemanticResourceAttributes = null }
 
-// Support OTLP exporter when OTEL_EXPORTER_OTLP_ENDPOINT is provided.
-// Default to ConsoleSpanExporter for local development.
+// Optional OTLP exporter (HTTP). If OTEL_EXPORTER_OTLP_ENDPOINT is provided,
+// we will use the OTLP HTTP exporter; otherwise fall back to console exporter.
+let OtelExporter = null
+try{
+  OtelExporter = require('@opentelemetry/exporter-trace-otlp-http').OTLPTraceExporter
+}catch(e){ OtelExporter = null }
+
 const serviceName = process.env.OTEL_SERVICE_NAME || 'pixelpact-server'
 
-let traceExporter = null
-if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
-  try {
-    // import lazily so package is optional
-    const { OTLPTraceExporter } = await import('@opentelemetry/exporter-trace-otlp-http')
-    traceExporter = new OTLPTraceExporter({ url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT })
-  } catch (e) {
-    // fallback to console exporter if OTLP package not installed
-    traceExporter = new ConsoleSpanExporter()
-    console.warn('OTLP exporter not available, falling back to ConsoleSpanExporter')
+function createExporter(){
+  const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || null
+  if (endpoint && OtelExporter){
+    return new OtelExporter({ url: endpoint })
   }
-} else {
-  traceExporter = new ConsoleSpanExporter()
+  return new ConsoleSpanExporter()
 }
 
+const resourceObj = Resource ? new Resource({ [(SemanticResourceAttributes && SemanticResourceAttributes.SERVICE_NAME) || 'service.name']: serviceName }) : undefined
+
 const sdk = new NodeSDK({
-  resource: new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: serviceName }),
+  resource: resourceObj,
   instrumentations: [getNodeAutoInstrumentations()],
-  traceExporter
+  traceExporter: createExporter()
 })
 
-sdk.start().then(()=> console.log('OpenTelemetry SDK started')).catch((e)=> console.warn('otel start failed', e))
+// Start the SDK if available. NodeSDK.start may or may not return a Promise
+// depending on the installed @opentelemetry/sdk-node version — handle both cases.
+try{
+  const startResult = sdk && typeof sdk.start === 'function' ? sdk.start() : null
+  if (startResult && typeof startResult.catch === 'function') {
+    startResult.catch(()=>{})
+  }
+}catch(e){
+  // swallow startup errors — tracing should not crash the app
+}
 
 process.on('SIGTERM', async () => {
-  try { await sdk.shutdown() } catch (e) { /* ignore */ }
+  try {
+    if (sdk && typeof sdk.shutdown === 'function') {
+      const shutdownResult = sdk.shutdown()
+      if (shutdownResult && typeof shutdownResult.catch === 'function') {
+        await shutdownResult.catch(()=>{})
+      }
+    }
+  } catch (e) { /* ignore */ }
   process.exit(0)
 })
 

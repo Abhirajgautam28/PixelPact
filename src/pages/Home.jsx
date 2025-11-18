@@ -298,6 +298,9 @@ export default function Home(){
                 </Suspense>
               </div>
             </div>
+              <div className="mt-4">
+                <ThreeScene height="180px" />
+              </div>
           </div>
         </div>
       </header>
