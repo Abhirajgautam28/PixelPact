@@ -10,7 +10,7 @@ import useStaggeredInView from '../hooks/useStaggeredInView'
 const LottiePlayer = lazy(()=> import('../components/LottiePlayer'))
 import miniAnim from '../assets/lottie/mini.json'
 import ThreeScene from '../components/ThreeScene'
-import ThreeBackground from '../components/ThreeBackground'
+import Hero3D from '../components/Hero3D'
 import { Link, useNavigate } from 'react-router-dom'
 import { useToast } from '../components/ToastContext'
 import templatesImg from '../assets/images/placeholders/templates.png'
@@ -252,8 +252,10 @@ export default function Home(){
 
   return (
     <main className="space-y-12 relative" aria-labelledby="home-hero">
-      {/* full-page 3D background */}
-      <ThreeBackground />
+      {/* full-page 3D hero background */}
+      <div style={{ position: 'relative', zIndex: 0 }}>
+        <Hero3D />
+      </div>
       <div style={{ position: 'relative', zIndex: 10 }}>
       {/* Create-room retry modal for server errors */}
       {createRoomError && (
