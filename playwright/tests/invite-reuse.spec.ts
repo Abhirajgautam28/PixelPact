@@ -20,6 +20,10 @@ test('invite token is single-use: second exchange returns 410', async ({ request
     data: JSON.stringify({ invite: token }),
     headers: { 'Content-Type': 'application/json' }
   })
+  if (!ex1.ok()){
+    const txt = await ex1.text().catch(()=>'<no-body>')
+    console.log('DEBUG join-invite first response:', ex1.status(), txt)
+  }
   expect(ex1.ok()).toBeTruthy()
 
   // second exchange should return 410 (used)
