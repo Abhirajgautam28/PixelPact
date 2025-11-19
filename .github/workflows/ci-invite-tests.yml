@@ -49,12 +49,15 @@ jobs:
             sleep 1
           done
 
-      - name: Start frontend (Vite) in background
+      - name: Build and start frontend (Vite preview) in background
+        if: always()
         run: |
-          # start Vite dev server so Playwright can access the frontend on known ports
-          nohup npm run dev -- --host > frontend-${{ matrix.browser }}.log 2>&1 &
-          # wait for frontend preview (up to 60s)
-          for i in {1..60}; do
+          # build the frontend and start a stable preview server for CI
+          # building ensures assets are available and preview reliably serves on port 5173
+          npm run build
+          nohup npx vite preview --port 5173 --strictPort > frontend-${{ matrix.browser }}.log 2>&1 &
+          # wait for frontend preview (up to 120s)
+          for i in {1..120}; do
             if curl -sSf http://localhost:5173/ >/dev/null; then
               echo "frontend ready"
               break
