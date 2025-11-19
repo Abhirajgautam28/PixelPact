@@ -11,6 +11,12 @@ on:
 jobs:
   playwright-invite-tests:
     runs-on: ubuntu-latest
+    env:
+      # Provide MongoDB Atlas connection string and JWT secret via GitHub Secrets.
+      # Do NOT commit secrets to the repository; set these in the repository settings
+      # under Settings → Secrets & variables → Actions.
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
     strategy:
       matrix:
         browser: [chromium, webkit, firefox]
@@ -31,8 +37,9 @@ jobs:
 
       - name: Start server in background
         run: |
+          # server will pick up MONGO_URI / JWT_SECRET from the environment if provided
           nohup node server/index.js > server-${{ matrix.browser }}.log 2>&1 &
-          # wait for health endpoint
+          # wait for health endpoint (up to 30s)
           for i in {1..30}; do
             if curl -sSf http://localhost:3001/api/_health >/dev/null; then
               echo "server ready"
@@ -71,6 +78,9 @@ jobs:
 
   nightly-snapshots:
     runs-on: ubuntu-latest
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
     if: ${{ github.event_name == 'schedule' }}
     steps:
       - name: Checkout

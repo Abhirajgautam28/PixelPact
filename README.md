@@ -217,4 +217,26 @@ CI notes (GitHub Actions):
    - `test-results-<browser>`: contains traces and screenshots retained on failure
    - `server-log-<browser>`: server stdout/stderr for that job
 
+CI and MongoDB Atlas
+
+- If you want CI to run against a MongoDB Atlas instance (to validate DB-backed invites, persistent invites, and auth flows), set the following **GitHub Actions secrets** in your repository (Settings → Secrets & variables → Actions):
+   - `MONGO_URI`: Your MongoDB Atlas connection string (do NOT commit this to source control).
+   - `JWT_SECRET`: A strong secret used to sign JWTs in CI (optional — the app falls back to a dev secret if not provided).
+
+- The CI workflow ` .github/workflows/ci-invite-tests.yml ` reads these secrets and exposes them to the job environment so the server will connect to Atlas when present. After adding the secrets, push a branch or open a PR to trigger the matrix job and validate multi-browser behavior.
+
+Local run with Atlas
+
+- To run the server locally against MongoDB Atlas, copy `.env.example` to `.env` and set `MONGO_URI` to your Atlas connection string. Then start the server and frontend as usual:
+
+```powershell
+# set env and start server (PowerShell)
+$env:MONGO_URI = 'your_atlas_connection_string'
+$env:JWT_SECRET = 'a-strong-secret'
+npm run start:server:background
+npx playwright test --reporter=list
+```
+
+Note: you must ensure your Atlas IP whitelist includes the machine running the tests (or use a private networking solution). For CI, the GitHub Actions runner will connect to Atlas from ephemeral runners — ensure your Atlas network access allows those connections (CIDR or 0.0.0.0/0 with IP filters and appropriate credentials). Always prefer least-privilege DB users and rotate credentials.
+
 If a job fails, download `playwright-report-<browser>` and open `index.html` locally — the report links to screenshots and traces for in-depth debugging.
