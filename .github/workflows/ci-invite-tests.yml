@@ -16,6 +16,7 @@ jobs:
       # Do NOT commit secrets to the repository; set these in the repository settings
       # under Settings → Secrets & variables → Actions.
       MONGO_URI: ${{ secrets.MONGO_URI }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
     strategy:
       matrix:
@@ -80,6 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MONGO_URI: ${{ secrets.MONGO_URI }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
     if: ${{ github.event_name == 'schedule' }}
     steps:
