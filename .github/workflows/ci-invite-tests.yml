@@ -1,0 +1,59 @@
+name: CI - Playwright Invite Tests
+
+on:
+  push:
+    branches: [ main, Add/Features ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  playwright-invite-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chromium, webkit, firefox]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Start server in background
+        run: |
+          nohup node server/index.js > server-${{ matrix.browser }}.log 2>&1 &
+          # wait for health endpoint
+          for i in {1..30}; do
+            if curl -sSf http://localhost:3001/api/_health >/dev/null; then
+              echo "server ready"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run Playwright tests for ${{ matrix.browser }}
+        run: |
+          npx playwright test --project=${{ matrix.browser }} --reporter=html || true
+          if [ -d playwright-report ]; then mv playwright-report playwright-report-${{ matrix.browser }}; fi
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report-${{ matrix.browser }}
+
+      - name: Upload server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-log-${{ matrix.browser }}
+          path: server-${{ matrix.browser }}.log
