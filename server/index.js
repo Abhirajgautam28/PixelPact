@@ -578,17 +578,40 @@ app.post('/api/rooms/join-invite', async (req, res) => {
     // try DB first
     const InviteModel = mongoose.models.Invite
     if (InviteModel){
-      const doc = await InviteModel.findOne({ token })
-      if (!doc) return res.status(404).json({ message: 'invalid' })
-      if (doc.used) return res.status(410).json({ message: 'used' })
-      if (doc.expiresAt && Date.now() > new Date(doc.expiresAt).getTime()){ await InviteModel.deleteOne({ token }).catch(()=>{}); return res.status(410).json({ message: 'expired' }) }
+      let doc = await InviteModel.findOne({ token })
+      // If DB is missing the document for any reason, try the in-memory fallback
+      if (!doc) {
+        const info = INVITES.get(token)
+        const suffix = token && token.slice ? token.slice(-6) : '??????'
+        if (info) {
+          console.warn(`[invite] db-missing token-*${suffix} — falling back to memory (used=${!!info.used})`)
+          if (info.used) return res.status(410).json({ message: 'used' })
+          if (info.expiresAt && Date.now() > info.expiresAt) { INVITES.delete(token); return res.status(410).json({ message: 'expired' }) }
+          // mark used in memory and remove to enforce single-use
+          info.used = true
+          INVITES.set(token, info)
+          INVITES.delete(token)
+          const tempJwt = jwt.sign({ room: info.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
+          setAuthCookie(res, tempJwt)
+          setCsrfCookie(res)
+          console.log(`[invite] token consumed from memory token-*${suffix}`)
+          return res.json({ ok: true, roomId: info.room })
+        }
+        console.warn(`[invite] token not found in db or memory token-*${suffix}`)
+        return res.status(404).json({ message: 'invalid' })
+      }
+      // found in DB path
+      const suffix = token && token.slice ? token.slice(-6) : '??????'
+      if (doc.used) { console.warn(`[invite] db token-*${suffix} already used`); return res.status(410).json({ message: 'used' }) }
+      if (doc.expiresAt && Date.now() > new Date(doc.expiresAt).getTime()){ await InviteModel.deleteOne({ token }).catch(()=>{}); console.warn(`[invite] db token-*${suffix} expired`); return res.status(410).json({ message: 'expired' }) }
       // mark used in DB
-      try{ await InviteModel.updateOne({ token }, { $set: { used: true } }) }catch(e){/*non-fatal*/}
-      // also remove from in-memory map
+      try{ await InviteModel.updateOne({ token }, { $set: { used: true } }) }catch(e){ console.warn('[invite] failed to mark db token used', e && e.message) }
+      // also remove from in-memory map if present
       INVITES.delete(token)
       const tempJwt = jwt.sign({ room: doc.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
       setAuthCookie(res, tempJwt)
       setCsrfCookie(res)
+      console.log(`[invite] db token-*${suffix} consumed`)
       return res.json({ ok: true, roomId: doc.room })
     }
     // fallback to in-memory

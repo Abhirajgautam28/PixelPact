@@ -24,11 +24,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Use Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '22'
+
+      - name: CI diagnostics - Node & npm
+        run: |
+          echo "Node version:"; node -v
+          echo "Node process.versions:"; node -p "JSON.stringify(process.versions)"
+          echo "npm version:"; npm -v
+
+      - name: CI diagnostics - Mongo connectivity
+        if: always()
+        continue-on-error: true
+        run: |
+          node scripts/ci-mongo-check.js
 
       - name: Install dependencies
         run: npm ci
@@ -49,12 +60,72 @@ jobs:
             sleep 1
           done
 
+      - name: Build and start frontend (Vite preview) in background
+        if: always()
+        run: |
+          # build the frontend and start a stable preview server for CI
+          # building ensures assets are available and preview reliably serves on port 5173
+          npm run build
+          nohup npx vite preview --port 5173 --strictPort > frontend-${{ matrix.browser }}.log 2>&1 &
+          # wait for frontend preview (up to 120s)
+          for i in {1..120}; do
+            if curl -sSf http://localhost:5173/ >/dev/null; then
+              echo "frontend ready"
+              break
+            fi
+            sleep 1
+          done
+
       - name: "Run Playwright tests for ${{ matrix.browser }}"
         run: |
           # Record traces on failure and retain screenshots on failure; fail the step when tests fail
           npx playwright test --project=${{ matrix.browser }} --reporter=html --trace=retain-on-failure
           if [ -d playwright-report ]; then mv playwright-report playwright-report-${{ matrix.browser }}; fi
           if [ -d test-results ]; then mv test-results test-results-${{ matrix.browser }}; fi
+
+      - name: Ensure Playwright artifact dirs exist
+        if: always()
+        run: |
+          # create artifact directories with a .gitkeep marker if Playwright produced nothing
+          for d in playwright-report-${{ matrix.browser }} test-results-${{ matrix.browser }}; do
+            if [ ! -d "$d" ]; then
+              mkdir -p "$d"
+              echo "placeholder" > "$d/.gitkeep"
+            fi
+          done
+
+      - name: List Playwright outputs (debug)
+        if: always()
+        run: |
+          echo "Listing playwright-report and test-results for ${{ matrix.browser }}"
+          if [ -d "playwright-report-${{ matrix.browser }}" ]; then ls -la "playwright-report-${{ matrix.browser }}" || true; else echo "no playwright-report-${{ matrix.browser }}"; fi
+          if [ -d "test-results-${{ matrix.browser }}" ]; then ls -la "test-results-${{ matrix.browser }}" || true; else echo "no test-results-${{ matrix.browser }}"; fi
+
+      - name: Pack Playwright outputs (tar.gz)
+        if: always()
+        run: |
+          set -e
+          for d in playwright-report-${{ matrix.browser }} test-results-${{ matrix.browser }}; do
+            archive="${d}.tar.gz"
+            if [ -d "$d" ] && [ "$(ls -A $d)" ]; then
+              echo "Creating archive $archive from $d"
+              tar -czf "$archive" -C "$d" .
+            else
+              echo "No files in $d; creating placeholder and archiving"
+              mkdir -p "$d"
+              echo "placeholder" > "$d/.gitkeep"
+              tar -czf "$archive" -C "$d" .
+            fi
+          done
+
+      - name: Upload packaged Playwright outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-playwright-outputs-${{ matrix.browser }}
+          path: |
+            playwright-report-${{ matrix.browser }}.tar.gz
+            test-results-${{ matrix.browser }}.tar.gz
 
       - name: Upload Playwright HTML report
         if: always()
@@ -87,11 +158,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Use Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '22'
+
+      - name: CI diagnostics - Node & npm
+        run: |
+          echo "Node version:"; node -v
+          echo "Node process.versions:"; node -p "JSON.stringify(process.versions)"
+          echo "npm version:"; npm -v
+
+      - name: CI diagnostics - Mongo connectivity
+        if: always()
+        continue-on-error: true
+        run: |
+          node scripts/ci-mongo-check.js
 
       - name: Install dependencies
         run: npm ci
