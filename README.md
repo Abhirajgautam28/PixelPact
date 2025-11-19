@@ -192,3 +192,29 @@ $env:VITE_ENABLE_ADMIN = 'true'; npm run preview
 ```
 
 Security note: enabling the admin UI on production exposes a client-side management UI — ensure your server-side admin authentication (JWT or ADMIN_TOKEN and ADMIN_JWT_SECRET) is strongly protected and never commit production secrets to the repo. For production workflows we recommend managing testimonials via a secure server-side admin dashboard or CI-driven content pipeline rather than exposing an in-browser admin unless you understand the risk and have strong auth controls in place.
+
+## Playwright tests & CI artifacts
+
+Run Playwright locally:
+
+```powershell
+npx playwright install --with-deps
+npx playwright test --reporter=list
+```
+
+Run a single test file:
+
+```powershell
+npx playwright test playwright/tests/invite-reuse.spec.ts --project=chromium
+```
+
+CI notes (GitHub Actions):
+
+- Workflow file: `.github/workflows/ci-invite-tests.yml`
+- The workflow runs tests across `chromium`, `webkit`, and `firefox`, starts the server and waits for `GET /api/_health`.
+- Artifacts uploaded per browser:
+   - `playwright-report-<browser>`: HTML report (open `index.html` locally)
+   - `test-results-<browser>`: contains traces and screenshots retained on failure
+   - `server-log-<browser>`: server stdout/stderr for that job
+
+If a job fails, download `playwright-report-<browser>` and open `index.html` locally — the report links to screenshots and traces for in-depth debugging.

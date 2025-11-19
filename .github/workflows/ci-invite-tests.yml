@@ -41,8 +41,10 @@ jobs:
 
       - name: Run Playwright tests for ${{ matrix.browser }}
         run: |
-          npx playwright test --project=${{ matrix.browser }} --reporter=html || true
+          # Record traces on failure and retain screenshots on failure; fail the job when tests fail
+          npx playwright test --project=${{ matrix.browser }} --reporter=html --trace=retain-on-failure || exit $?
           if [ -d playwright-report ]; then mv playwright-report playwright-report-${{ matrix.browser }}; fi
+          if [ -d test-results ]; then mv test-results test-results-${{ matrix.browser }}; fi
 
       - name: Upload Playwright HTML report
         if: always()
@@ -50,6 +52,13 @@ jobs:
         with:
           name: playwright-report-${{ matrix.browser }}
           path: playwright-report-${{ matrix.browser }}
+
+      - name: Upload test-results (traces/screenshots)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results-${{ matrix.browser }}
 
       - name: Upload server log
         if: always()
