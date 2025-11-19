@@ -1,5 +1,9 @@
 # PixelPact
 
+# PixelPact
+
+<!-- CI trigger: small metadata update to start GitHub Actions workflow -->
+<!-- Timestamp: 2025-11-20 -->
 This repo now contains a Vite + React + TailwindCSS homepage scaffold for PixelPact (a multi-user collaborative whiteboard).
 
 Local development
