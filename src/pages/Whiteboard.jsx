@@ -147,7 +147,6 @@ export default function Whiteboard(){
     init()
     return ()=> { cancelled = true }
   }, [])
-  }, [])
 
   useEffect(()=>{
     const c = canvasRef.current
@@ -656,6 +655,11 @@ export default function Whiteboard(){
       setInviteOpen(true)
       if (body && body.expiresAt) setInviteExpiry(body.expiresAt)
       if (body && body.invite) setInviteToken(body.invite)
+      // show explicit toast that this invite is single-use and when it expires
+      try{
+        const expiry = body && body.expiresAt ? (new Date(Number(body.expiresAt)).toLocaleString()) : 'unknown'
+        toast.show(`Invite sent — single-use. Expires: ${expiry}`, { type: 'info' })
+      }catch(e){ /* swallow */ }
   }catch(err){ toast.show('Invite failed', { type: 'error' }) }
   }
 

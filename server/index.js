@@ -49,6 +49,8 @@ const ROOMS = new Map()
 // in-memory invite tokens (single-use tokens stored here).
 // Format: INVITES.set(token, { room, owner, used: false, expiresAt: timestamp })
 const INVITES = new Map()
+// in-memory presence: roomId -> Set(socketId)
+const PRESENCE = new Map()
 
 function makeRoomId(){ return `room-${Math.random().toString(36).slice(2,9)}` }
 
@@ -513,7 +515,7 @@ app.post('/api/logs', (req, res) => {
 })
 
 // Invite: generate a simple share token (stateless JWT)
-app.post('/api/rooms/:id/invite', (req, res)=>{
+app.post('/api/rooms/:id/invite', async (req, res)=>{
   const { id } = req.params
   try{
     // determine requester identity (if any)
@@ -564,7 +566,7 @@ app.post('/api/rooms/share/:token/revoke', (req, res) => {
 
 // Exchange a single-use invite token for a temporary session cookie and room join.
 // The response sets an auth cookie so the client can immediately open the board and connect via socket.io.
-app.post('/api/rooms/join-invite', (req, res) => {
+app.post('/api/rooms/join-invite', async (req, res) => {
   try{
     const token = (req.body && req.body.invite) || req.query.invite
     if (!token) return res.status(400).json({ message: 'missing' })
@@ -605,6 +607,30 @@ app.post('/api/rooms/join-invite', (req, res) => {
 // socket.io handling
 io.on('connection', (socket) => {
   console.log('socket connected', socket.id)
+  // helper: add socket to presence set for a room and emit snapshot
+  function addToPresence(roomId){
+    try{
+      if (!roomId) return
+      const set = PRESENCE.get(roomId) || new Set()
+      set.add(socket.id)
+      PRESENCE.set(roomId, set)
+      // emit full presence snapshot to room
+      io.to(roomId).emit('presence', Array.from(set))
+    }catch(e){ console.warn('addToPresence failed', e) }
+  }
+  // helper: remove socket from all room presence sets and emit updates
+  function removeFromAllPresence(){
+    try{
+      for (const [roomId, set] of PRESENCE.entries()){
+        if (set.has(socket.id)){
+          set.delete(socket.id)
+          if (set.size === 0) PRESENCE.delete(roomId)
+          else PRESENCE.set(roomId, set)
+          io.to(roomId).emit('presence', Array.from(set))
+        }
+      }
+    }catch(e){ console.warn('removeFromAllPresence failed', e) }
+  }
   socket.on('join', (roomId) => {
     // Verify token from handshake cookies (double as socket auth)
     try{
@@ -645,6 +671,8 @@ io.on('connection', (socket) => {
         jwt.verify(token, JWT_SECRET)
       }catch(e){ socket.emit('join-error', { message: 'invalid_token' }); return }
       socket.join(roomId)
+      // update presence map and emit snapshot
+      addToPresence(roomId)
       socket.to(roomId).emit('peer-joined', { id: socket.id })
     }catch(err){
       console.warn('join verify failed', err)
@@ -661,7 +689,7 @@ io.on('connection', (socket) => {
     if (room) socket.to(room).emit('clear', { room })
     else socket.broadcast.emit('clear', {})
   })
-  socket.on('disconnect', ()=> console.log('socket disconnected', socket.id))
+  socket.on('disconnect', ()=>{ console.log('socket disconnected', socket.id); try{ removeFromAllPresence() }catch(e){} })
 })
 
 const PORT = process.env.PORT || 3001
