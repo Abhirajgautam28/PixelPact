@@ -1,0 +1,51 @@
+name: CI - Hero Screenshots
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ Add/Features ]
+
+jobs:
+  screenshots:
+    name: Generate hero screenshots
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Start backend
+        run: node server/index.js &
+
+      - name: Start frontend (Vite)
+        run: npm run dev &
+
+      - name: Wait for frontend
+        run: |
+          for i in {1..60}; do
+            if curl -sSf http://localhost:5173/ >/dev/null; then
+              echo "frontend ready"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run Playwright screenshot test (chromium)
+        run: npx playwright test playwright/tests/hero.screenshot.spec.ts --project=chromium --reporter=list
+
+      - name: Upload hero screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: hero-screenshots
+          path: test-results/hero-screenshots/**

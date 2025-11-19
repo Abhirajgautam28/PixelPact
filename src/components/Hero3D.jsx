@@ -10,8 +10,8 @@ export default function Hero3D({
   emissive = 0x2a0a4b,
   // default to lathe for softer organic silhouette (Dora-like)
   shape = 'lathe', // 'torusknot' or 'lathe'
-  // particle count tuned for clarity and perf
-  pCount = 80,
+  // particle count tuned for clarity and perf (final preset)
+  pCount = 60,
   // warm key light for pleasing skin-tone-like highlights
   keyLightColor = 0xffc58f,
 } = {}){
@@ -73,14 +73,14 @@ export default function Hero3D({
     const shardGeo = new THREE.IcosahedronGeometry(0.04, 0)
     const shardMat = new THREE.MeshStandardMaterial({ color: 0x60a5fa, metalness: 0.12, roughness: 0.5, emissive: 0x001022 })
     const shards = new THREE.Group()
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 10; i++) {
       const s = new THREE.Mesh(shardGeo, shardMat)
       const r = 1.5 + Math.random() * 1.4
       const theta = Math.random() * Math.PI * 2
       const phi = (Math.random() - 0.5) * Math.PI
       s.position.set(Math.cos(theta) * Math.cos(phi) * r, Math.sin(phi) * r * 0.55, Math.sin(theta) * Math.cos(phi) * r)
       s.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2)
-      s.scale.setScalar(0.35 + Math.random() * 0.6)
+      s.scale.setScalar(0.32 + Math.random() * 0.48)
       shards.add(s)
     }
     scene.add(shards)
@@ -89,18 +89,18 @@ export default function Hero3D({
     const particleCount = Math.max(24, Math.min(220, pCount))
     const pPos = new Float32Array(particleCount * 3)
     for(let i=0;i<particleCount;i++){
-      pPos[i*3+0] = (Math.random() - 0.5) * 7.2
-      pPos[i*3+1] = (Math.random() - 0.5) * 3.2
-      pPos[i*3+2] = (Math.random() - 0.5) * 5.2
+      pPos[i*3+0] = (Math.random() - 0.5) * 6.4
+      pPos[i*3+1] = (Math.random() - 0.5) * 2.6
+      pPos[i*3+2] = (Math.random() - 0.5) * 4.6
     }
     const pGeo = new THREE.BufferGeometry()
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3))
-    const pMat = new THREE.PointsMaterial({ color: 0xbdb5ff, size: 0.016, sizeAttenuation: true, transparent: true, opacity: 0.9 })
+    const pMat = new THREE.PointsMaterial({ color: 0xd9ccff, size: 0.017, sizeAttenuation: true, transparent: true, opacity: 0.92 })
     const points = new THREE.Points(pGeo, pMat)
     scene.add(points)
 
     // subtle fog for depth
-    scene.fog = new THREE.FogExp2(0x04061c, 0.018)
+    scene.fog = new THREE.FogExp2(0x04061c, 0.012)
 
     // animation
     let raf = null
@@ -108,11 +108,11 @@ export default function Hero3D({
     const pointer = { x: 0.5, y: 0.5 }
     function animate(){
       const t = clock.getElapsedTime()
-      // organic motion: gentle rotation + breathing scale
-      mesh.rotation.y += 0.0035
-      mesh.rotation.x = 0.6 + Math.sin(t * 0.32) * 0.06
-      const breath = 1 + Math.sin(t * 0.6) * 0.012
-      mesh.scale.setScalar(breath)
+        // organic motion: gentle rotation + breathing scale
+        mesh.rotation.y += 0.0032
+        mesh.rotation.x = 0.6 + Math.sin(t * 0.32) * 0.05
+        const breath = 1 + Math.sin(t * 0.6) * 0.01
+        mesh.scale.setScalar(breath)
       shards.children.forEach((s, i)=>{
         s.rotation.y += 0.0009 + (i % 3) * 0.0004
         s.position.y += Math.sin(t * 0.18 + i) * 0.00035
@@ -126,7 +126,7 @@ export default function Hero3D({
 
       // particle drift
       const arr = pGeo.attributes.position.array
-      for(let i=0;i<particleCount;i++) arr[i*3+1] += Math.sin(t*0.16 + i) * 0.00018
+      for(let i=0;i<particleCount;i++) arr[i*3+1] += Math.sin(t*0.14 + i) * 0.00014
       pGeo.attributes.position.needsUpdate = true
 
       renderer.render(scene, camera)
