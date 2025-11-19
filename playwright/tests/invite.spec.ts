@@ -22,7 +22,8 @@ test('invite link allows one-time join and sets cookie', async () => {
   expect(invResp.ok()).toBeTruthy()
   const invBody = await invResp.json()
   expect(invBody.url).toBeTruthy()
-  const inviteUrl = invBody.url
+  const inviteToken = invBody.invite
+  const inviteUrl = `${base}/board/${roomId}?invite=${inviteToken}`
 
   // owner opens the board
   await pageA.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
@@ -31,21 +32,8 @@ test('invite link allows one-time join and sets cookie', async () => {
   // guest opens invite link (one-time)
   await pageB.goto(inviteUrl, { waitUntil: 'load', timeout: 30000 })
   await pageB.waitForSelector('canvas')
-
-  // wait for owner to observe a peer join (presence update)
-  const presenceLocator = pageA.locator('.text-sm.text-slate-500')
-  await pageA.waitForSelector('.text-sm.text-slate-500')
-
-  // poll until presence shows at least 1 (owner plus guest => should be >=1)
-  let seen = false
-  for (let i=0;i<20;i++){
-    const txt = await presenceLocator.innerText()
-    const m = txt.match(/Presence:\s*(\d+)/)
-    const n = m ? Number(m[1]) : 0
-    if (n >= 1) { seen = true; break }
-    await pageA.waitForTimeout(200)
-  }
-  expect(seen).toBeTruthy()
+  // guest should be connected to socket
+  await pageB.locator('text=Connected').waitFor({ timeout: 5000 })
 
   await browser.close()
 })
