@@ -16,7 +16,7 @@
 		"start:server:background": "powershell -NoProfile -Command \"Start-Process -FilePath node -ArgumentList 'server/index.js' -WorkingDirectory (Get-Location)\"",
 		"e2e:install": "npx playwright install --with-deps",
 		"e2e:run": "npx playwright test",
-		"generate:jwt": "node scripts/generate-jwt-secret.js",
+		"generate:jwt": "node scripts/generate-jwt-secret.cjs",
 		"e2e:screenshots": "npx playwright test --project=chromium --update-snapshots"
 	},
 	"bin": {
@@ -47,6 +47,7 @@
 		"express": "^5.1.0",
 		"jsonwebtoken": "^9.0.2",
 		"lottie-web": "^5.13.0",
+		"mongodb": "^7.0.0",
 		"mongoose": "^7.6.0",
 		"react": "18.2.0",
 		"react-dom": "18.2.0",

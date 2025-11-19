@@ -1,31 +1,14 @@
 #!/usr/bin/env node
-// Generate a cryptographically secure JWT secret and optionally append to .env
-const fs = require('fs')
-const path = require('path')
-const crypto = require('crypto')
+// ESM wrapper for compatibility: forward to the .cjs generator
+import { spawnSync } from 'child_process'
+import { fileURLToPath } from 'url'
+import path from 'path'
 
-function generateSecret(bytes = 32) {
-  return crypto.randomBytes(bytes).toString('hex')
-}
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-const secret = generateSecret(48)
-console.log('\nGenerated JWT secret (keep this safe):')
-console.log(secret)
-
-const envPath = path.resolve(process.cwd(), '.env')
+const cjsPath = path.join(__dirname, 'generate-jwt-secret.cjs')
 const args = process.argv.slice(2)
-if (args.includes('--append') || args.includes('-a')) {
-  const line = `JWT_SECRET=${secret}\n`
-  try {
-    fs.appendFileSync(envPath, line, { flag: 'a' })
-    console.log(`\nAppended JWT_SECRET to ${envPath}`)
-  } catch (err) {
-    console.error(`\nFailed to append to ${envPath}: ${err.message}`)
-  }
-} else {
-  console.log('\nTo save it to your local .env file, re-run with --append or -a')
-  console.log('Example: node scripts/generate-jwt-secret.js --append')
-}
 
-// exit
-process.exit(0)
+const res = spawnSync(process.execPath, [cjsPath, ...args], { stdio: 'inherit' })
+process.exit(res.status === null ? 1 : res.status)
