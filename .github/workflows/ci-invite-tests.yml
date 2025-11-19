@@ -49,12 +49,36 @@ jobs:
             sleep 1
           done
 
+      - name: Start frontend (Vite) in background
+        run: |
+          # start Vite dev server so Playwright can access the frontend on known ports
+          nohup npm run dev -- --host > frontend-${{ matrix.browser }}.log 2>&1 &
+          # wait for frontend preview (up to 60s)
+          for i in {1..60}; do
+            if curl -sSf http://localhost:5173/ >/dev/null; then
+              echo "frontend ready"
+              break
+            fi
+            sleep 1
+          done
+
       - name: "Run Playwright tests for ${{ matrix.browser }}"
         run: |
           # Record traces on failure and retain screenshots on failure; fail the step when tests fail
           npx playwright test --project=${{ matrix.browser }} --reporter=html --trace=retain-on-failure
           if [ -d playwright-report ]; then mv playwright-report playwright-report-${{ matrix.browser }}; fi
           if [ -d test-results ]; then mv test-results test-results-${{ matrix.browser }}; fi
+
+      - name: Ensure Playwright artifact dirs exist
+        if: always()
+        run: |
+          # create artifact directories with a .gitkeep marker if Playwright produced nothing
+          for d in playwright-report-${{ matrix.browser }} test-results-${{ matrix.browser }}; do
+            if [ ! -d "$d" ]; then
+              mkdir -p "$d"
+              echo "placeholder" > "$d/.gitkeep"
+            fi
+          done
 
       - name: Upload Playwright HTML report
         if: always()
