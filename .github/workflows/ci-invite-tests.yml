@@ -29,10 +29,17 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+      - name: CI diagnostics - Node & npm
+        run: |
+          echo "Node version:"; node -v
+          echo "Node process.versions:"; node -p "JSON.stringify(process.versions)"
+          echo "npm version:"; npm -v
+
+      - name: CI diagnostics - Mongo connectivity
+        if: always()
+        continue-on-error: true
+        run: |
+          node scripts/ci-mongo-check.js
 
       - name: Install dependencies
         run: npm ci
@@ -156,10 +163,17 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+      - name: CI diagnostics - Node & npm
+        run: |
+          echo "Node version:"; node -v
+          echo "Node process.versions:"; node -p "JSON.stringify(process.versions)"
+          echo "npm version:"; npm -v
+
+      - name: CI diagnostics - Mongo connectivity
+        if: always()
+        continue-on-error: true
+        run: |
+          node scripts/ci-mongo-check.js
 
       - name: Install dependencies
         run: npm ci
