@@ -16,10 +16,16 @@ test('invite token is single-use: second exchange returns 410', async ({ request
   const token = invBody.invite
 
   // first exchange should succeed (200)
-  const ex1 = await request.post('http://localhost:3001/api/rooms/join-invite', { data: { invite: token } })
+  const ex1 = await request.post('http://localhost:3001/api/rooms/join-invite', {
+    data: JSON.stringify({ invite: token }),
+    headers: { 'Content-Type': 'application/json' }
+  })
   expect(ex1.ok()).toBeTruthy()
 
   // second exchange should return 410 (used)
-  const ex2 = await request.post('http://localhost:3001/api/rooms/join-invite', { data: { invite: token } })
+  const ex2 = await request.post('http://localhost:3001/api/rooms/join-invite', {
+    data: JSON.stringify({ invite: token }),
+    headers: { 'Content-Type': 'application/json' }
+  })
   expect(ex2.status()).toBe(410)
 })
