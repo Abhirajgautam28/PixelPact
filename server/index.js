@@ -29,7 +29,7 @@ let UserModel = null
 let RoomModel = null
 
 async function initDb(){
-  const uri = process.env.MONGO_URI
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI
   if (!uri) return
   await mongoose.connect(uri)
   const userSchema = new mongoose.Schema({ email: { type: String, unique: true }, password: String, name: String })
@@ -43,6 +43,9 @@ initDb().catch(err => console.warn('DB init failed (continuing with in-memory):'
 // in-memory fallback
 const USERS = new Map()
 const ROOMS = new Map()
+// in-memory invite tokens (single-use tokens stored here).
+// Format: INVITES.set(token, { room, owner, used: false, expiresAt: timestamp })
+const INVITES = new Map()
 
 function makeRoomId(){ return `room-${Math.random().toString(36).slice(2,9)}` }
 
@@ -509,8 +512,60 @@ app.post('/api/logs', (req, res) => {
 // Invite: generate a simple share token (stateless JWT)
 app.post('/api/rooms/:id/invite', (req, res)=>{
   const { id } = req.params
-  const invite = jwt.sign({ room: id }, JWT_SECRET, { expiresIn: '7d' })
-  res.json({ invite, url: `${req.protocol}://${req.get('host')}/board/${id}?invite=${invite}` })
+  try{
+    // determine requester identity (if any)
+    let owner = null
+    const token = extractToken(req)
+    if (token){
+      try{ const payload = jwt.verify(token, JWT_SECRET); owner = payload.email || payload.id || null }catch(e){}
+    }
+    // generate a secure random token and store it for single-use
+    const tokenBytes = crypto.randomBytes(20).toString('hex')
+    const ttl = (req.body && req.body.ttl) ? parseInt(req.body.ttl,10) : (60 * 60 * 1000) // default 1 hour in ms
+    const expiresAt = Date.now() + (isNaN(ttl) ? 60 * 60 * 1000 : ttl)
+    INVITES.set(tokenBytes, { room: id, owner, used: false, expiresAt })
+    const url = `${process.env.FRONTEND_ORIGIN || `${req.protocol}://${req.get('host')}`}/board/${id}?invite=${tokenBytes}`
+    return res.json({ invite: tokenBytes, url, expiresAt })
+  }catch(err){ console.error('invite create failed', err); return res.status(500).json({ message: 'error' }) }
+})
+
+// Revoke a previously created invite token (owner only)
+app.post('/api/rooms/share/:token/revoke', (req, res) => {
+  try{
+    const token = req.params.token
+    const info = INVITES.get(token)
+    if (!info) return res.status(404).json({ message: 'not_found' })
+    // verify requester is owner (if owner was recorded)
+    const requesterToken = extractToken(req)
+    let requester = null
+    if (requesterToken){ try{ const p = jwt.verify(requesterToken, JWT_SECRET); requester = p.email || p.id || null }catch(e){} }
+    if (info.owner && requester && info.owner !== requester) return res.status(401).json({ message: 'unauthorized' })
+    INVITES.delete(token)
+    return res.json({ ok: true })
+  }catch(err){ console.error('revoke invite failed', err); return res.status(500).json({ message: 'error' }) }
+})
+
+// Exchange a single-use invite token for a temporary session cookie and room join.
+// The response sets an auth cookie so the client can immediately open the board and connect via socket.io.
+app.post('/api/rooms/join-invite', (req, res) => {
+  try{
+    const token = (req.body && req.body.invite) || req.query.invite
+    if (!token) return res.status(400).json({ message: 'missing' })
+    const info = INVITES.get(token)
+    if (!info) return res.status(404).json({ message: 'invalid' })
+    if (info.used) return res.status(410).json({ message: 'used' })
+    if (info.expiresAt && Date.now() > info.expiresAt) { INVITES.delete(token); return res.status(410).json({ message: 'expired' }) }
+    // mark used and remove to enforce single-use
+    info.used = true
+    INVITES.set(token, info)
+    INVITES.delete(token)
+    // create a short-lived session JWT for this guest so socket.io can accept it
+    const tempJwt = jwt.sign({ room: info.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
+    // set auth cookie so browser clients will present it on socket handshake
+    setAuthCookie(res, tempJwt)
+    setCsrfCookie(res)
+    return res.json({ ok: true, roomId: info.room })
+  }catch(err){ console.error('join-invite failed', err); return res.status(500).json({ message: 'error' }) }
 })
 
 // socket.io handling
@@ -519,12 +574,35 @@ io.on('connection', (socket) => {
   socket.on('join', (roomId) => {
     // Verify token from handshake cookies (double as socket auth)
     try{
+      // allow three authentication paths for joining sockets:
+      // 1) existing auth cookie/token (normal flow)
+      // 2) an invite token provided in handshake auth or query (single-use)
+      // 3) an Authorization header or custom token header
       const cookie = socket.handshake.headers && socket.handshake.headers.cookie
       let token = null
       if (cookie){
         const m = cookie.match(/(?:^|; )token=([^;]+)/)
         if (m) token = decodeURIComponent(m[1])
       }
+
+      // Check for invite token in socket handshake (client may set auth: { invite })
+      const hs = socket.handshake || {}
+      const inviteFromAuth = (hs.auth && hs.auth.invite) || (hs.query && hs.query.invite) || (hs.headers && hs.headers['x-invite-token'])
+      if (!token && inviteFromAuth){
+        const info = INVITES.get(inviteFromAuth)
+        if (!info){ socket.emit('join-error', { message: 'invalid_invite' }); return }
+        if (info.used){ socket.emit('join-error', { message: 'invite_used' }); return }
+        if (info.expiresAt && Date.now() > info.expiresAt){ INVITES.delete(inviteFromAuth); socket.emit('join-error', { message: 'invite_expired' }); return }
+        // mark used and allow join
+        info.used = true
+        INVITES.set(inviteFromAuth, info)
+        INVITES.delete(inviteFromAuth)
+        socket.join(roomId)
+        socket.to(roomId).emit('peer-joined', { id: socket.id })
+        return
+      }
+
+      // fallback to regular token-based auth
       if (!token){
         socket.emit('join-error', { message: 'unauthorized' })
         return
