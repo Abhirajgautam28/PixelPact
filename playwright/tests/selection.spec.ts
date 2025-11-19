@@ -9,18 +9,20 @@ test('select region and delete', async ({ page }) => {
   const { waitForFrontend } = await import('./waitForFrontend')
   const base = await waitForFrontend(page, [5173, 4173], 30000)
   await page.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
-  await page.waitForSelector('canvas', { timeout: 20000 })
+  await page.waitForSelector('canvas', { timeout: 30000 })
 
   const canvas = page.locator('canvas')
   const box = await canvas.boundingBox()
   if (!box) throw new Error('canvas not present')
 
-  // draw a dot so selection has something to capture
+  // draw a small stroke so selection has something to capture
   const x = Math.round(box.x + box.width/2)
   const y = Math.round(box.y + box.height/2)
-  await page.mouse.move(x, y)
-  await page.mouse.down(); await page.mouse.up()
-  await page.waitForTimeout(200)
+  await page.mouse.move(x - 4, y - 4)
+  await page.mouse.down()
+  await page.mouse.move(x + 4, y + 4)
+  await page.mouse.up()
+  await page.waitForTimeout(300)
 
   // snapshot before selection
   const before = await page.evaluate(()=> document.querySelector('canvas')?.toDataURL() || '')

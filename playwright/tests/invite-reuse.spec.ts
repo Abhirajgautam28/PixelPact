@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test'
-import { spawn } from 'child_process'
 
 async function waitForBackendReady(request, opts = {}){
   const url = opts.url || 'http://localhost:3001/api/_health'
@@ -14,19 +13,9 @@ async function waitForBackendReady(request, opts = {}){
 }
 
 test('invite token is single-use: second exchange returns 410', async ({ request }) => {
-  // If backend is not already running, spawn it from the test so the test is hermetic.
-  let serverProc = null
-  const alreadyUp = await waitForBackendReady(request)
-  if (!alreadyUp){
-    serverProc = spawn(process.execPath, ['server/index.js'], { stdio: 'inherit' })
-    // wait for health to be available
-    const ok = await waitForBackendReady(request)
-    if (!ok){
-      if (serverProc) try{ serverProc.kill(); }catch(e){}
-      throw new Error('backend did not become ready')
-    }
-  }
-  try{
+  // Ensure backend is available (CI starts the server); do not spawn the server from the test.
+  const ok = await waitForBackendReady(request)
+  if (!ok) throw new Error('backend not ready: http://localhost:3001/api/_health')
   // create a room first
   const r = await request.post('http://localhost:3001/api/rooms', { data: {} })
   expect(r.ok()).toBeTruthy()
@@ -71,9 +60,5 @@ test('invite token is single-use: second exchange returns 410', async ({ request
     headers: ex2Headers
   })
   expect(ex2.status()).toBe(410)
-  } finally {
-    if (serverProc) {
-      try{ serverProc.kill(); }catch(e){}
-    }
-  }
+  // no spawned server to clean up in CI mode
 })

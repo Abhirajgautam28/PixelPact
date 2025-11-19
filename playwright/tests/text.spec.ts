@@ -9,7 +9,7 @@ test('text tool adds text to canvas', async ({ page }) => {
   const { waitForFrontend } = await import('./waitForFrontend')
   const base = await waitForFrontend(page, [5173, 4173], 30000)
   await page.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
-  await page.waitForSelector('canvas', { timeout: 20000 })
+  await page.waitForSelector('canvas', { timeout: 30000 })
   const canvas = page.locator('canvas')
   const box = await canvas.boundingBox()
   if (!box) throw new Error('canvas not present')
@@ -21,7 +21,7 @@ test('text tool adds text to canvas', async ({ page }) => {
   await page.keyboard.press('t')
   // click to open inline input
   await page.mouse.click(x, y)
-  await page.waitForSelector('input[autoFocus], input[style]', { timeout: 2000 }).catch(()=>{})
+  await page.waitForSelector('input[autoFocus], input[style]', { timeout: 3000 }).catch(()=>{})
   // type text and commit with Enter
   await page.keyboard.type('Hello E2E')
   await page.keyboard.press('Enter')

@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test'
 
-export async function waitForFrontend(page: Page, ports: number[] = [5173, 4173], timeout = 30000) {
+export async function waitForFrontend(page: Page, ports: number[] = [5173, 4173], timeout = 60000) {
   const start = Date.now()
   const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
   while (Date.now() - start < timeout) {

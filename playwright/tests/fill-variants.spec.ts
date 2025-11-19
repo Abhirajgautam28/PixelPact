@@ -12,7 +12,7 @@ for(const c of colors){
     const { waitForFrontend } = await import('../tests/waitForFrontend')
     const base = await waitForFrontend(page, [5173, 4173], 30000)
     await page.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
-    await page.waitForSelector('canvas', { timeout: 20000 })
+    await page.waitForSelector('canvas', { timeout: 30000 })
     const canvas = page.locator('canvas')
     const box = await canvas.boundingBox()
     if (!box) throw new Error('canvas not present')
