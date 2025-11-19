@@ -46,66 +46,105 @@ export default function Whiteboard(){
   const toolbarRef = useRef(null)
   const containerRef = useRef(null)
 
-  // connect
+  // connect (lazy): handle invite exchange if present, then create socket
   useEffect(()=>{
-    const s = io(undefined, { path: '/socket' })
-    setSocket(s)
-    s.on('connect', ()=> setConnected(true))
-    s.on('disconnect', ()=> setConnected(false))
-
-    s.on('presence', (list)=> setPresence(list))
-    s.on('peer-joined', (p)=> setPresence(prev => Array.from(new Set([...prev, p.id]))))
-    s.on('peer-left', (p)=> setPresence(prev => prev.filter(x=> x !== p.id)))
-
-    s.on('draw', (data)=>{
-      const c = canvasRef.current
-      if (!c) return
-      const ctx = c.getContext && c.getContext('2d')
-      if (!ctx) return
-      // support various draw payloads: line, fill, clearRegion
-      if (data.fill && data.at && data.color){
-        try{ floodFillAt(Math.round(data.at.x), Math.round(data.at.y), hexToRgba(data.color)) }catch(e){}
-        return
-      }
-      if (data.clearRegion){
-        const r = data.clearRegion
-        try{ setUndoStack(s => [...s, c.toDataURL()]) }catch(e){}
-        ctx.clearRect(r.x, r.y, r.w, r.h)
-        return
-      }
-      if (data.from && data.to){
-        try{
-          ctx.save()
-          applyCtxDefaults(ctx)
-          ctx.strokeStyle = data.color || '#000'
-          ctx.lineWidth = Math.max(1, Math.round(data.lineWidth || 2))
-          ctx.beginPath()
-          const fx = Math.round(data.from.x)
-          const fy = Math.round(data.from.y)
-          const tx = Math.round(data.to.x)
-          const ty = Math.round(data.to.y)
-          ctx.moveTo(fx, fy)
-          ctx.lineTo(tx, ty)
-          ctx.stroke()
-          ctx.restore()
-        }catch(e){}
-      }
-    })
-    s.on('clear', (data)=>{
+    let s = null
+    let mounted = true
+    async function init(){
       try{
-        const c = canvasRef.current
-        if (!c) return
-        const ctx = c.getContext && c.getContext('2d')
-        if (!ctx) return
-        // push current snapshot for undo then clear
-        try{ setUndoStack(s => [...s, c.toDataURL()]) }catch(e){}
-        ctx.clearRect(0,0,c.width,c.height)
-        toast.show('Board cleared by another participant', { type: 'info' })
-      }catch(e){}
-    })
+        // if invite present in query, exchange for session cookie before connecting sockets
+        try{
+          const params = new URLSearchParams(window.location.search)
+          const invite = params.get('invite')
+          if (invite){
+            // POST to exchange invite for a temp session cookie
+            await fetch('/api/rooms/join-invite', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ invite }) }).catch(()=>{})
+            // remove invite param from URL to avoid reuse in navigation
+            params.delete('invite')
+            const newUrl = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '')
+            window.history.replaceState({}, '', newUrl)
+          }
+        }catch(e){ /* non-fatal */ }
 
-    return ()=> s.close()
+        s = io(undefined, { path: '/socket', auth: {} })
+        if (!mounted) { s.close(); return }
+        setSocket(s)
+        s.on('connect', ()=> setConnected(true))
+        s.on('disconnect', ()=> setConnected(false))
+
+        s.on('presence', (list)=> setPresence(list))
+        s.on('peer-joined', (p)=> setPresence(prev => Array.from(new Set([...prev, p.id]))))
+        s.on('peer-left', (p)=> setPresence(prev => prev.filter(x=> x !== p.id)))
+
+        s.on('draw', (data)=>{
+          const c = canvasRef.current
+          if (!c) return
+          const ctx = c.getContext && c.getContext('2d')
+          if (!ctx) return
+          // support various draw payloads: line, fill, clearRegion
+          if (data.fill && data.at && data.color){
+            try{ floodFillAt(Math.round(data.at.x), Math.round(data.at.y), hexToRgba(data.color)) }catch(e){}
+            return
+          }
+          if (data.clearRegion){
+            const r = data.clearRegion
+            try{ setUndoStack(s => [...s, c.toDataURL()]) }catch(e){}
+            ctx.clearRect(r.x, r.y, r.w, r.h)
+            return
+          }
+          if (data.from && data.to){
+            try{
+              ctx.save()
+              applyCtxDefaults(ctx)
+              ctx.strokeStyle = data.color || '#000'
+              ctx.lineWidth = Math.max(1, Math.round(data.lineWidth || 2))
+              ctx.beginPath()
+              const fx = Math.round(data.from.x)
+              const fy = Math.round(data.from.y)
+              const tx = Math.round(data.to.x)
+              const ty = Math.round(data.to.y)
+              ctx.moveTo(fx, fy)
+              ctx.lineTo(tx, ty)
+              ctx.stroke()
+              ctx.restore()
+            }catch(e){}
+          }
+        })
+        s.on('clear', (data)=>{
+          try{
+            const c = canvasRef.current
+            if (!c) return
+            const ctx = c.getContext && c.getContext('2d')
+            if (!ctx) return
+            // push current snapshot for undo then clear
+            try{ setUndoStack(s => [...s, c.toDataURL()]) }catch(e){}
+            ctx.clearRect(0,0,c.width,c.height)
+            toast.show('Board cleared by another participant', { type: 'info' })
+          }catch(e){}
+        })
+      }catch(err){ console.warn('socket init failed', err) }
+    }
+    init()
+    return ()=>{ mounted = false; if (s) s.close() }
   }, [])
+
+  // helper to get room id from current path
+  function getRoomIdFromPath(){
+    try{ const parts = window.location.pathname.split('/'); return parts[parts.length-1] }catch(e){ return null }
+  }
+
+  async function handleCreateInvite(){
+    try{
+      const id = getRoomIdFromPath()
+      if (!id) { toast.show('Cannot determine room id', { type: 'error' }); return }
+      const res = await fetch(`/api/rooms/${encodeURIComponent(id)}/invite`, { method: 'POST', headers: { 'Content-Type':'application/json' } })
+      if (!res.ok) { const err = await res.json().catch(()=>({})); toast.show('Failed to create invite: ' + (err.message || res.status), { type: 'error' }); return }
+      const body = await res.json()
+      setInviteLink(body.url || body.invite || '')
+      setInviteOpen(true)
+      try{ await navigator.clipboard.writeText(body.url || '') ; toast.show('Invite URL copied to clipboard', { type: 'success' }) }catch(e){ /* ignore */ }
+    }catch(err){ console.error('create invite failed', err); toast.show('Create invite failed', { type: 'error' }) }
+  }
 
   useEffect(()=>{
     const c = canvasRef.current
@@ -811,6 +850,15 @@ export default function Whiteboard(){
               </div>
             </div>
           </div>
+
+            {/* Share card */}
+            <div className="p-2 border rounded bg-white shadow-sm">
+              <div className="text-xs font-medium mb-1">Share</div>
+              <div className="flex gap-2 items-center">
+                <button onClick={handleCreateInvite} className="px-2 py-1 bg-emerald-100 rounded">Share</button>
+                <button onClick={()=>{ if (inviteLink) { navigator.clipboard?.writeText(inviteLink); toast.show('Copied invite link') } else { toast.show('No invite yet', { type: 'info' }) } }} className="px-2 py-1 rounded">Copy</button>
+              </div>
+            </div>
         </aside>
 
         <div className="flex-1">
