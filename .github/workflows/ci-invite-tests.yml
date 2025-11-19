@@ -80,6 +80,39 @@ jobs:
             fi
           done
 
+      - name: List Playwright outputs (debug)
+        if: always()
+        run: |
+          echo "Listing playwright-report and test-results for ${{ matrix.browser }}"
+          if [ -d "playwright-report-${{ matrix.browser }}" ]; then ls -la "playwright-report-${{ matrix.browser }}" || true; else echo "no playwright-report-${{ matrix.browser }}"; fi
+          if [ -d "test-results-${{ matrix.browser }}" ]; then ls -la "test-results-${{ matrix.browser }}" || true; else echo "no test-results-${{ matrix.browser }}"; fi
+
+      - name: Pack Playwright outputs (tar.gz)
+        if: always()
+        run: |
+          set -e
+          for d in playwright-report-${{ matrix.browser }} test-results-${{ matrix.browser }}; do
+            archive="${d}.tar.gz"
+            if [ -d "$d" ] && [ "$(ls -A $d)" ]; then
+              echo "Creating archive $archive from $d"
+              tar -czf "$archive" -C "$d" .
+            else
+              echo "No files in $d; creating placeholder and archiving"
+              mkdir -p "$d"
+              echo "placeholder" > "$d/.gitkeep"
+              tar -czf "$archive" -C "$d" .
+            fi
+          done
+
+      - name: Upload packaged Playwright outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-playwright-outputs-${{ matrix.browser }}
+          path: |
+            playwright-report-${{ matrix.browser }}.tar.gz
+            test-results-${{ matrix.browser }}.tar.gz
+
       - name: Upload Playwright HTML report
         if: always()
         uses: actions/upload-artifact@v4
