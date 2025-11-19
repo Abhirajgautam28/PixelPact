@@ -23,6 +23,8 @@ export default function Whiteboard(){
   const [presence, setPresence] = useState([])
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
+  const [inviteExpiry, setInviteExpiry] = useState(null)
+  const [inviteToken, setInviteToken] = useState(null)
   const [undoStack, setUndoStack] = useState([])
   const [redoStack, setRedoStack] = useState([])
   const [currentLayer, setCurrentLayer] = useState('default')
@@ -46,18 +48,46 @@ export default function Whiteboard(){
   const toolbarRef = useRef(null)
   const containerRef = useRef(null)
 
-  // connect
+  // connect (handles optional invite exchange before socket init)
   useEffect(()=>{
-    const s = io(undefined, { path: '/socket' })
-    setSocket(s)
-    s.on('connect', ()=> setConnected(true))
-    s.on('disconnect', ()=> setConnected(false))
+    let cancelled = false
+    const init = async ()=>{
+      try{
+        // if an invite token is present in the URL, exchange it for a short-lived session cookie
+        const params = new URLSearchParams(window.location.search)
+        const invite = params.get('invite')
+        if (invite){
+          try{
+            const resp = await fetch('/api/rooms/join-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invite }) })
+            if (resp.ok){
+              const body = await resp.json()
+              toast.show('Joined room via invite', { type: 'success' })
+              // store token and room for UI if returned
+              setInviteToken(invite)
+              if (body && body.roomId) {
+                // proactively replace URL to remove invite token for privacy
+                const cleanUrl = window.location.pathname
+                window.history.replaceState({}, '', cleanUrl)
+              }
+            } else {
+              const err = await resp.json().catch(()=>({ message: 'invite_error' }))
+              toast.show(`Invite failed: ${err.message || resp.statusText}`, { type: 'error' })
+            }
+          }catch(e){ toast.show('Invite exchange failed', { type: 'error' }) }
+        }
+      }catch(e){ /* ignore */ }
 
-    s.on('presence', (list)=> setPresence(list))
-    s.on('peer-joined', (p)=> setPresence(prev => Array.from(new Set([...prev, p.id]))))
-    s.on('peer-left', (p)=> setPresence(prev => prev.filter(x=> x !== p.id)))
+      if (cancelled) return
+      const s = io(undefined, { path: '/socket' })
+      setSocket(s)
+      s.on('connect', ()=> setConnected(true))
+      s.on('disconnect', ()=> setConnected(false))
 
-    s.on('draw', (data)=>{
+      s.on('presence', (list)=> setPresence(list))
+      s.on('peer-joined', (p)=> setPresence(prev => Array.from(new Set([...prev, p.id]))))
+      s.on('peer-left', (p)=> setPresence(prev => prev.filter(x=> x !== p.id)))
+
+      s.on('draw', (data)=>{
       const c = canvasRef.current
       if (!c) return
       const ctx = c.getContext && c.getContext('2d')
@@ -103,8 +133,19 @@ export default function Whiteboard(){
         toast.show('Board cleared by another participant', { type: 'info' })
       }catch(e){}
     })
+      // when connected, auto-join the room inferred from URL path
+      s.on('connect', ()=>{
+        try{
+          const parts = window.location.pathname.split('/')
+          const id = parts[parts.length-1]
+          if (id) s.emit('join', id)
+        }catch(e){}
+      })
 
-    return ()=> s.close()
+      return ()=> s.close()
+    }
+    init()
+    return ()=> { cancelled = true }
   }, [])
 
   useEffect(()=>{
@@ -612,6 +653,13 @@ export default function Whiteboard(){
       const body = await inv.json()
       setInviteLink(body.url)
       setInviteOpen(true)
+      if (body && body.expiresAt) setInviteExpiry(body.expiresAt)
+      if (body && body.invite) setInviteToken(body.invite)
+      // show explicit toast that this invite is single-use and when it expires
+      try{
+        const expiry = body && body.expiresAt ? (new Date(Number(body.expiresAt)).toLocaleString()) : 'unknown'
+        toast.show(`Invite sent — single-use. Expires: ${expiry}`, { type: 'info' })
+      }catch(e){ /* swallow */ }
   }catch(err){ toast.show('Invite failed', { type: 'error' }) }
   }
 
@@ -866,6 +914,10 @@ export default function Whiteboard(){
             <div className="mt-2">
               <input readOnly value={inviteLink} className="w-full p-2 border rounded" />
             </div>
+              {inviteExpiry && (
+                <div className="text-sm text-slate-500 mt-2">Expires: {new Date(inviteExpiry).toLocaleString()}</div>
+              )}
+              <div className="text-xs text-slate-500 mt-1">Note: invite link is single-use and expires after first use.</div>
             <div className="mt-4 flex justify-end gap-2">
               <button onClick={()=> { navigator.clipboard?.writeText(inviteLink); toast.show('Copied invite link') }} className="px-3 py-1 bg-slate-100 rounded">Copy</button>
               <button onClick={()=> setInviteOpen(false)} className="px-3 py-1 bg-slate-200 rounded">Close</button>
