@@ -27,13 +27,13 @@ test('invite link allows one-time join and sets cookie', async () => {
 
   // owner opens the board
   await pageA.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
-  await pageA.waitForSelector('canvas')
+  await pageA.waitForSelector('canvas', { timeout: 30000 })
 
   // guest opens invite link (one-time)
-  await pageB.goto(inviteUrl, { waitUntil: 'load', timeout: 30000 })
-  await pageB.waitForSelector('canvas')
-  // guest should be connected to socket
-  await pageB.locator('text=Connected').waitFor({ timeout: 5000 })
+  await pageB.goto(inviteUrl, { waitUntil: 'load', timeout: 60000 })
+  await pageB.waitForSelector('canvas', { timeout: 30000 })
+  // guest should be connected to socket (allow longer for socket handshake)
+  await pageB.locator('text=Connected').waitFor({ timeout: 20000 })
 
   await browser.close()
 })

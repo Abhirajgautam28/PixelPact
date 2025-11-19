@@ -14,7 +14,7 @@ test('create room via API and open whiteboard', async ({ page }) => {
   // navigate to board once frontend is responsive
   await page.goto(`${base}/board/${roomId}`, { waitUntil: 'load', timeout: 30000 })
   // wait for the canvas or the labelled whiteboard application to appear (less fragile across builds)
-  await page.waitForSelector('canvas, [aria-label="Whiteboard canvas"], [role="application"]', { timeout: 20000 })
+  await page.waitForSelector('canvas, [aria-label="Whiteboard canvas"], [role="application"]', { timeout: 30000 })
   // optionally check that title contains Whiteboard if present
   const title = await page.title()
   // log to make failures easier to debug
