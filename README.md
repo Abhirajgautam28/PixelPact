@@ -237,6 +237,32 @@ npm run start:server:background
 npx playwright test --reporter=list
 ```
 
+Generate a JWT secret (locally)
+
+If you need a secure JWT secret for local development, a helper script is included to generate one. It does not store secrets in the repository; you should set it in your local `.env` or in GitHub Secrets for CI.
+
+1. Generate and print a secret:
+
+```powershell
+# prints a secure secret to the console
+npm run generate:jwt
+```
+
+2. Generate and append the secret to your local `.env` (unsafe to share):
+
+```powershell
+# this will append a new JWT_SECRET line to your .env file
+npm run generate:jwt -- --append
+```
+
+3. Manually add to GitHub Actions secrets:
+
+   - Go to your repository → Settings → Secrets & variables → Actions → New repository secret
+   - Add `MONGO_URI` and paste your Atlas connection string (do NOT commit this into source control)
+   - Add `JWT_SECRET` and paste the generated secret
+
+After adding secrets, push a new commit or update the PR and the CI pipeline will use these values for the test runs.
+
 Note: you must ensure your Atlas IP whitelist includes the machine running the tests (or use a private networking solution). For CI, the GitHub Actions runner will connect to Atlas from ephemeral runners — ensure your Atlas network access allows those connections (CIDR or 0.0.0.0/0 with IP filters and appropriate credentials). Always prefer least-privilege DB users and rotate credentials.
 
 If a job fails, download `playwright-report-<browser>` and open `index.html` locally — the report links to screenshots and traces for in-depth debugging.

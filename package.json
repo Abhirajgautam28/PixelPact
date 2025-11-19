@@ -16,6 +16,7 @@
 		"start:server:background": "powershell -NoProfile -Command \"Start-Process -FilePath node -ArgumentList 'server/index.js' -WorkingDirectory (Get-Location)\"",
 		"e2e:install": "npx playwright install --with-deps",
 		"e2e:run": "npx playwright test",
+		"generate:jwt": "node scripts/generate-jwt-secret.js",
 		"e2e:screenshots": "npx playwright test --project=chromium --update-snapshots"
 	},
 	"bin": {
