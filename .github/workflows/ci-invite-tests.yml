@@ -5,6 +5,8 @@ on:
     branches: [ main, Add/Features ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '0 3 * * *' # nightly at 03:00 UTC
 
 jobs:
   playwright-invite-tests:
@@ -39,10 +41,10 @@ jobs:
             sleep 1
           done
 
-      - name: Run Playwright tests for ${{ matrix.browser }}
+      - name: "Run Playwright tests for ${{ matrix.browser }}"
         run: |
-          # Record traces on failure and retain screenshots on failure; fail the job when tests fail
-          npx playwright test --project=${{ matrix.browser }} --reporter=html --trace=retain-on-failure || exit $?
+          # Record traces on failure and retain screenshots on failure; fail the step when tests fail
+          npx playwright test --project=${{ matrix.browser }} --reporter=html --trace=retain-on-failure
           if [ -d playwright-report ]; then mv playwright-report playwright-report-${{ matrix.browser }}; fi
           if [ -d test-results ]; then mv test-results test-results-${{ matrix.browser }}; fi
 
@@ -66,3 +68,60 @@ jobs:
         with:
           name: server-log-${{ matrix.browser }}
           path: server-${{ matrix.browser }}.log
+
+  nightly-snapshots:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Start server in background
+        run: |
+          nohup node server/index.js > server-nightly.log 2>&1 &
+          for i in {1..60}; do
+            if curl -sSf http://localhost:3001/api/_health >/dev/null; then
+              echo "server ready"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run nightly Playwright suite (retain traces on failure)
+        run: |
+          npx playwright test --reporter=html --trace=retain-on-failure
+          if [ -d playwright-report ]; then mv playwright-report playwright-report-nightly; fi
+          if [ -d test-results ]; then mv test-results test-results-nightly; fi
+        continue-on-error: true
+
+      - name: Upload nightly HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-nightly
+          path: playwright-report-nightly
+
+      - name: Upload nightly test-results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-nightly
+          path: test-results-nightly
+
+      - name: Upload nightly server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-log-nightly
+          path: server-nightly.log
