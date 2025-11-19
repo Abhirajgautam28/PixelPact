@@ -116,6 +116,11 @@ function csrfCheck(req, res, next){
 
 app.use(csrfCheck)
 
+// lightweight health endpoint used by tests to wait for server readiness
+app.get('/api/_health', (req, res) => {
+  return res.json({ ok: true, time: Date.now() })
+})
+
 // Register
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, name } = req.body
