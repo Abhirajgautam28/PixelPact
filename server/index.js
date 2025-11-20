@@ -455,9 +455,9 @@ app.put('/api/testimonials/:idx', (req, res) => {
     const arr = JSON.parse(raw || '[]')
     if (isNaN(idx) || idx < 0 || idx >= arr.length) return res.status(400).json({ message: 'invalid index' })
     const t = req.body || {}
-    const name = sanitizeString(t.name || arr[idx].name, 100)
-    const role = sanitizeString(t.role || arr[idx].role, 100)
-    const text = sanitizeString(t.text || arr[idx].text, 1000)
+    const name = sanitizeString(t.name !== undefined ? t.name : arr[idx].name, 100)
+    const role = sanitizeString(t.role !== undefined ? t.role : arr[idx].role, 100)
+    const text = sanitizeString(t.text !== undefined ? t.text : arr[idx].text, 1000)
     if (!name || !text) return res.status(400).json({ message: 'invalid' })
     arr[idx] = { name, role, text }
     fs.writeFileSync(p, JSON.stringify(arr, null, 2), 'utf8')
