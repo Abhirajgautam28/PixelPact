@@ -1,0 +1,74 @@
+name: Playwright E2E Matrix (in-memory DB)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  e2e-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      # Ensure no external MongoDB URI is present so the server falls back to in-memory storage
+      MONGO_URI: ""
+      MONGODB_URI: ""
+      NODE_OPTIONS: "--unhandled-rejections=strict"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start backend server (background)
+        run: |
+          nohup node server/index.js > server.log 2>&1 & echo $! > server.pid
+          sleep 1
+
+      - name: Start frontend dev server (Vite) in background
+        run: |
+          nohup npm run dev > vite.log 2>&1 & echo $! > vite.pid
+          sleep 1
+
+      - name: Wait for backend health
+        run: |
+          for i in {1..30}; do
+            if curl -sSf http://127.0.0.1:3001/api/_health >/dev/null 2>&1; then
+              echo "backend up"; break
+            fi
+            echo "waiting for backend... ($i)"; sleep 2
+          done
+
+      - name: Wait for frontend
+        run: |
+          for i in {1..30}; do
+            if curl -sSf http://127.0.0.1:5173/ >/dev/null 2>&1; then
+              echo "frontend up"; break
+            fi
+            echo "waiting for frontend... ($i)"; sleep 2
+          done
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests (matrix)
+        env:
+          FRONTEND_ORIGIN: http://localhost:5173
+        run: npx playwright test --project=${{ matrix.browser }} --reporter=github
+
+      - name: Collect logs
+        if: always()
+        run: |
+          echo '=== server.log ===' && tail -n +1 server.log || true
+          echo '=== vite.log ===' && tail -n +1 vite.log || true
+          if [ -f server.pid ]; then kill "$(cat server.pid)" || true; fi
+          if [ -f vite.pid ]; then kill "$(cat vite.pid)" || true; fi
