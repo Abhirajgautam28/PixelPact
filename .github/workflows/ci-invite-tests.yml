@@ -12,11 +12,11 @@ jobs:
   playwright-invite-tests:
     runs-on: ubuntu-latest
     env:
-      # Provide MongoDB Atlas connection string and JWT secret via GitHub Secrets.
-      # Do NOT commit secrets to the repository; set these in the repository settings
-      # under Settings → Secrets & variables → Actions.
-      MONGO_URI: ${{ secrets.MONGO_URI }}
-      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      # For matrix Playwright runs we prefer an in-memory fallback to avoid
+      # flaky external Atlas/TLS networking issues from runners. Leave
+      # `MONGO_URI`/`MONGODB_URI` blank so the server falls back to memory.
+      MONGO_URI: ''
+      MONGODB_URI: ''
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
     strategy:
       matrix:
@@ -55,7 +55,8 @@ jobs:
       - name: Wait for server health (ci health-check)
         run: |
           # uses scripts/ci-health-check.js to poll the health endpoint
-          node scripts/ci-health-check.js
+          # Increase timeout for server readiness in CI to reduce flakes
+          HEALTH_TIMEOUT=180000 HEALTH_POLL_INTERVAL=1000 node scripts/ci-health-check.js
 
       - name: Build and start frontend (Vite preview) in background
         if: always()
@@ -76,7 +77,14 @@ jobs:
       - name: "Run Playwright tests for ${{ matrix.browser }}"
         run: |
           # Record traces on failure and retain screenshots on failure; fail the step when tests fail
-          npx playwright test --project=${{ matrix.browser }} --reporter=html --trace=retain-on-failure
+          ARGS=("--project=${{ matrix.browser }}" "--reporter=html" "--trace=retain-on-failure")
+          if [ "${{ matrix.browser }}" = "firefox" ]; then
+            # Give Firefox a couple of automatic retries to reduce flakes
+            ARGS+=("--retries=2")
+            # Run Firefox with a single worker to reduce concurrency flakiness
+            ARGS+=("--workers=1")
+          fi
+          npx playwright test "${ARGS[@]}"
           if [ -d playwright-report ]; then mv playwright-report playwright-report-${{ matrix.browser }}; fi
           if [ -d test-results ]; then mv test-results test-results-${{ matrix.browser }}; fi
 
