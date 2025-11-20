@@ -1,7 +1,13 @@
 import React, { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
-export default function ThreeScene({ width = '100%', height = '220px' }){
+const isTest = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test'
+
+function ThreeScenePlaceholder(){
+  return <div data-testid="three-scene-placeholder" style={{ width: '100%', height: '100%' }} />
+}
+
+function ThreeSceneReal({ width = '100%', height = '220px' }){
   const mountRef = useRef(null)
 
   useEffect(()=>{
@@ -127,3 +133,7 @@ export default function ThreeScene({ width = '100%', height = '220px' }){
 
   return <div ref={mountRef} style={{ width, height }} aria-hidden="true" />
 }
+
+const ThreeScene = isTest ? ThreeScenePlaceholder : ThreeSceneReal
+
+export default ThreeScene
