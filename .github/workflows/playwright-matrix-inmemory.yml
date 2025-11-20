@@ -29,33 +29,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Start backend server (background)
+      - name: Start dev servers (backend + Vite)
         run: |
-          nohup node server/index.js > server.log 2>&1 & echo $! > server.pid
-          sleep 1
-
-      - name: Start frontend dev server (Vite) in background
-        run: |
-          nohup npm run dev > vite.log 2>&1 & echo $! > vite.pid
-          sleep 1
-
-      - name: Wait for backend health
-        run: |
-          for i in {1..30}; do
-            if curl -sSf http://127.0.0.1:3001/api/_health >/dev/null 2>&1; then
-              echo "backend up"; break
-            fi
-            echo "waiting for backend... ($i)"; sleep 2
-          done
-
-      - name: Wait for frontend
-        run: |
-          for i in {1..30}; do
-            if curl -sSf http://127.0.0.1:5173/ >/dev/null 2>&1; then
-              echo "frontend up"; break
-            fi
-            echo "waiting for frontend... ($i)"; sleep 2
-          done
+          echo "Starting dev servers with scripts/start-dev-e2e.js"
+          node ./scripts/start-dev-e2e.js
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
@@ -63,12 +40,23 @@ jobs:
       - name: Run Playwright tests (matrix)
         env:
           FRONTEND_ORIGIN: http://localhost:5173
-        run: npx playwright test --project=${{ matrix.browser }} --reporter=github
+        run: |
+          npx playwright test --project=${{ matrix.browser }} --reporter=html --retries=1 --workers=1
+          # Playwright will create the HTML report in `playwright-report`
 
-      - name: Collect logs
+      - name: Upload logs and artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-artifacts-${{ matrix.browser }}
+          path: |
+            server.log
+            vite.log
+            playwright-report
+            test-results
+
+      - name: Tear down background processes
         if: always()
         run: |
-          echo '=== server.log ===' && tail -n +1 server.log || true
-          echo '=== vite.log ===' && tail -n +1 vite.log || true
           if [ -f server.pid ]; then kill "$(cat server.pid)" || true; fi
           if [ -f vite.pid ]; then kill "$(cat vite.pid)" || true; fi

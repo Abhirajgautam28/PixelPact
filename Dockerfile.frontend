@@ -1,0 +1,24 @@
+FROM node:24-slim AS build
+
+WORKDIR /app
+
+# Install full deps because Vite preview requires dev deps
+COPY package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+# Copy project and build
+COPY . .
+RUN npm run build
+
+FROM node:24-slim
+WORKDIR /app
+
+# Use a minimal runtime to serve the built site using Vite preview
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+
+EXPOSE 5173
+
+ENV NODE_ENV=production
+
+CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "5173"]
