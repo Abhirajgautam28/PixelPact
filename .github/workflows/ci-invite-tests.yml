@@ -12,11 +12,11 @@ jobs:
   playwright-invite-tests:
     runs-on: ubuntu-latest
     env:
-      # Provide MongoDB Atlas connection string and JWT secret via GitHub Secrets.
-      # Do NOT commit secrets to the repository; set these in the repository settings
-      # under Settings → Secrets & variables → Actions.
-      MONGO_URI: ${{ secrets.MONGO_URI }}
-      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      # For matrix Playwright runs we prefer an in-memory fallback to avoid
+      # flaky external Atlas/TLS networking issues from runners. Leave
+      # `MONGO_URI`/`MONGODB_URI` blank so the server falls back to memory.
+      MONGO_URI: ''
+      MONGODB_URI: ''
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
     strategy:
       matrix:
