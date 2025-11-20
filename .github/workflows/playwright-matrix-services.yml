@@ -1,0 +1,91 @@
+name: Playwright E2E Matrix (services)
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  e2e-matrix-services:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      MONGO_URI: ""
+      MONGODB_URI: ""
+      NODE_OPTIONS: "--unhandled-rejections=strict"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build server image
+        run: |
+          docker build -f Dockerfile.server -t pixelpact-server:ci .
+
+      - name: Run server container
+        run: |
+          docker rm -f pixelpact-server || true
+          docker run -d --name pixelpact-server -p 3001:3001 -e MONGO_URI="" -e MONGODB_URI="" pixelpact-server:ci
+
+      - name: Build frontend image
+        run: |
+          docker build -f Dockerfile.frontend -t pixelpact-frontend:ci .
+
+      - name: Run frontend container
+        run: |
+          docker rm -f pixelpact-frontend || true
+          docker run -d --name pixelpact-frontend -p 5173:5173 pixelpact-frontend:ci
+
+      - name: Wait for backend health
+        run: |
+          for i in {1..60}; do
+            if curl -sSf http://127.0.0.1:3001/api/_health >/dev/null 2>&1; then
+              echo "backend up"; break
+            fi
+            echo "waiting for backend... ($i)"; sleep 2
+          done
+
+      - name: Wait for frontend
+        run: |
+          for i in {1..60}; do
+            if curl -sSf http://127.0.0.1:5173/ >/dev/null 2>&1; then
+              echo "frontend up"; break
+            fi
+            echo "waiting for frontend... ($i)"; sleep 2
+          done
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        env:
+          FRONTEND_ORIGIN: http://localhost:5173
+        run: |
+          npx playwright test --project=${{ matrix.browser }} --reporter=html --retries=1 --workers=1
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-services-artifacts-${{ matrix.browser }}
+          path: |
+            playwright-report
+            test-results
+            server.log
+
+      - name: Tear down containers
+        if: always()
+        run: |
+          docker rm -f pixelpact-frontend || true
+          docker rm -f pixelpact-server || true

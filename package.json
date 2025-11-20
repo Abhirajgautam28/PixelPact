@@ -17,10 +17,12 @@
 		"stop:server:ps": "powershell -NoProfile -File ./scripts/stop-server.ps1",
 		"stop:server:sh": "bash ./scripts/stop-server.sh",
 		"stop:server": "node -e \"const os=require('os'); if (os.platform()==='win32') require('child_process').spawnSync('powershell',['-NoProfile','-File','./scripts/stop-server.ps1'],{stdio:'inherit'}); else require('child_process').spawnSync('bash',['./scripts/stop-server.sh'],{stdio:'inherit'});\"",
+		"start:dev:e2e": "node ./scripts/start-dev-e2e.js",
 		"e2e:install": "npx playwright install --with-deps",
 		"e2e:run": "npx playwright test",
 		"generate:jwt": "node scripts/generate-jwt-secret.cjs",
 		"e2e:screenshots": "npx playwright test --project=chromium --update-snapshots"
+		,"ci:fetch-artifacts": "powershell -NoProfile -File ./scripts/fetch-ci-artifacts.ps1"
 	},
 	"bin": {
 		"manage-testimonials": "scripts/manage-testimonials.js"
