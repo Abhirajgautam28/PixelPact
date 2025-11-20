@@ -8,7 +8,7 @@ import pixelmatch from 'pixelmatch'
 // across browsers due to encoding metadata even when rendered pixels match.
 test('draw on canvas, undo and redo (pixel-accurate)', async ({ page }) => {
   // create a room
-  const resp = await page.request.post('http://localhost:3001/api/rooms', { data: {} })
+  const resp = await page.request.post('http://127.0.0.1:3001/api/rooms', { data: {} })
   expect(resp.ok()).toBeTruthy()
   const body = await resp.json()
   const roomId = body.roomId || body.id || body._id

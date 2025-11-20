@@ -6,7 +6,7 @@ import pixelmatch from 'pixelmatch'
 
 test('debug draw: capture before/after/afterRedo and write diffs', async ({ page, browserName }) => {
   // create a room
-  const resp = await page.request.post('http://localhost:3001/api/rooms', { data: {} })
+  const resp = await page.request.post('http://127.0.0.1:3001/api/rooms', { data: {} })
   const body = await resp.json()
   const roomId = body.roomId || body.id || body._id
 

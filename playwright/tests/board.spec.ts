@@ -3,7 +3,7 @@ import { waitForFrontend } from './waitForFrontend'
 
 test('create room via API and open whiteboard', async ({ page }) => {
   // Create a room via backend API (server must be running on :3001)
-  const resp = await page.request.post('http://localhost:3001/api/rooms', { data: {} })
+  const resp = await page.request.post('http://127.0.0.1:3001/api/rooms', { data: {} })
   expect(resp.ok()).toBeTruthy()
   const body = await resp.json()
   const roomId = body.roomId || body.id || body._id

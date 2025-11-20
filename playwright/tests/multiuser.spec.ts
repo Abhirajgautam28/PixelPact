@@ -9,7 +9,7 @@ test('multi-user draw syncs across sockets', async () => {
   const pageB = await ctxB.newPage()
 
   // create room from pageA
-  const resp = await pageA.request.post('http://localhost:3001/api/rooms', { data: {} })
+  const resp = await pageA.request.post('http://127.0.0.1:3001/api/rooms', { data: {} })
   expect(resp.ok()).toBeTruthy()
   const body = await resp.json()
   const roomId = body.roomId || body.id || body._id

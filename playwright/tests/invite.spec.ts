@@ -8,7 +8,7 @@ test('invite link allows one-time join and sets cookie', async () => {
   const pageB = await ctxB.newPage()
 
   // create room via API
-  const resp = await pageA.request.post('http://localhost:3001/api/rooms', { data: {} })
+    const resp = await pageA.request.post('http://127.0.0.1:3001/api/rooms', { data: {} })
   expect(resp.ok()).toBeTruthy()
   const body = await resp.json()
   const roomId = body.roomId || body.id || body._id
@@ -18,7 +18,7 @@ test('invite link allows one-time join and sets cookie', async () => {
   const base = await waitForFrontend(pageA, [5173, 4173], 30000)
 
   // create invite token
-  const invResp = await pageA.request.post(`http://localhost:3001/api/rooms/${roomId}/invite`, { data: {} })
+  const invResp = await pageA.request.post(`http://127.0.0.1:3001/api/rooms/${roomId}/invite`, { data: {} })
   expect(invResp.ok()).toBeTruthy()
   const invBody = await invResp.json()
   expect(invBody.url).toBeTruthy()

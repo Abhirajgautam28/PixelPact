@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test('select region and delete', async ({ page }) => {
-  const resp = await page.request.post('http://localhost:3001/api/rooms', { data: {} })
+  const resp = await page.request.post('http://127.0.0.1:3001/api/rooms', { data: {} })
   expect(resp.ok()).toBeTruthy()
   const body = await resp.json()
   const roomId = body.roomId || body.id || body._id
