@@ -35,14 +35,14 @@ jobs:
           echo "Node process.versions:"; node -p "JSON.stringify(process.versions)"
           echo "npm version:"; npm -v
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: CI diagnostics - Mongo connectivity
         if: always()
         continue-on-error: true
         run: |
           node scripts/ci-mongo-check.js
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
@@ -51,14 +51,11 @@ jobs:
         run: |
           # server will pick up MONGO_URI / JWT_SECRET from the environment if provided
           nohup node server/index.js > server-${{ matrix.browser }}.log 2>&1 &
-          # wait for health endpoint (up to 30s)
-          for i in {1..30}; do
-            if curl -sSf http://localhost:3001/api/_health >/dev/null; then
-              echo "server ready"
-              break
-            fi
-            sleep 1
-          done
+
+      - name: Wait for server health (ci health-check)
+        run: |
+          # uses scripts/ci-health-check.js to poll the health endpoint
+          node scripts/ci-health-check.js
 
       - name: Build and start frontend (Vite preview) in background
         if: always()
