@@ -199,6 +199,38 @@ Security note: enabling the admin UI on production exposes a client-side managem
 
 ## Playwright tests & CI artifacts
 
+## Dev server: start & stop
+
+Local development often requires starting the backend server and the Vite frontend. Use these convenience scripts from the project root.
+
+- Start backend in foreground:
+
+```powershell
+npm run start:server
+```
+
+- Start backend in background (PowerShell helper):
+
+```powershell
+npm run start:server:background
+```
+
+- Stop the backend server (cross-platform):
+
+```powershell
+# PowerShell / Windows
+npm run stop:server:ps
+
+# POSIX / WSL / macOS
+npm run stop:server:sh
+
+# cross-platform wrapper (uses the appropriate script for your OS)
+npm run stop:server
+```
+
+These scripts target processes that include `server/index.js` in their command line to avoid killing unrelated Node processes.
+
+
 Run Playwright locally:
 
 ```powershell
