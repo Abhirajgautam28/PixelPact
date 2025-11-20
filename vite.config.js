@@ -10,8 +10,7 @@ export default defineConfig({
       // use a small local stub for lottie-web to avoid importing the runtime in tests/dev server
       'lottie-web': resolve(__dirname, 'src/mocks/lottie-web.js')
     }
-  }
-  ,
+  },
   // Dev server proxy: forward API and websocket requests to the backend server
   server: {
     proxy: {
@@ -26,6 +25,19 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
         secure: false
+      }
+    }
+  },
+  build: {
+    // Warn earlier if chunks grow too large (adjustable)
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) return 'vendor'
+          // Put the Home page in a separate chunk to reduce the main bundle size
+          if (id.includes('src/pages') && id.includes('Home')) return 'home'
+        }
       }
     }
   }
