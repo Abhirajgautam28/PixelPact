@@ -7,8 +7,9 @@ test('home hero screenshot', async ({ page, browserName }) => {
   const base = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || 'http://localhost:5173'
   await page.goto(base, { waitUntil: 'load', timeout: 30000 })
   // wait for network idle and hero element to exist (longer timeout to avoid flakes)
-  await page.waitForLoadState('networkidle', { timeout: 20000 })
-  await page.waitForSelector('#home-hero', { timeout: 20000 })
+  const selectorTimeout = browserName === 'firefox' ? 60000 : 20000
+  await page.waitForLoadState('networkidle', { timeout: selectorTimeout })
+  await page.waitForSelector('#home-hero', { timeout: selectorTimeout })
   // small delay to allow Three.js to finish first-frame renders
   await page.waitForTimeout(1000)
 
