@@ -148,6 +148,19 @@ jobs:
           name: server-log-${{ matrix.browser }}
           path: server-${{ matrix.browser }}.log
 
+      - name: CI DB invite audit
+        if: always()
+        continue-on-error: true
+        run: |
+          node scripts/ci-invite-audit.js > invite-audit-${{ matrix.browser }}.txt || true
+
+      - name: Upload CI invite audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: invite-audit-${{ matrix.browser }}
+          path: invite-audit-${{ matrix.browser }}.txt
+
   nightly-snapshots:
     runs-on: ubuntu-latest
     env:
