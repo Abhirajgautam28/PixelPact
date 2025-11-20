@@ -34,6 +34,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Keep node_modules split: isolate very large libraries to their own chunk
+          if (id.includes('node_modules/three')) return 'three'
+          if (id.includes('node_modules/lottie-web')) return 'lottie'
           if (id.includes('node_modules')) return 'vendor'
           // Put the Home page in a separate chunk to reduce the main bundle size
           if (id.includes('src/pages') && id.includes('Home')) return 'home'
@@ -42,3 +45,4 @@ export default defineConfig({
     }
   }
 })
+
