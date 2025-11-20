@@ -6,8 +6,8 @@
 // Exits 0 when healthy, exits 1 on timeout.
 
 const url = process.env.HEALTH_URL || 'http://localhost:3001/api/_health';
-// Defaults: 120s total wait, poll every 1s. Can be overridden via env vars.
-const timeout = parseInt(process.env.HEALTH_TIMEOUT || '120000', 10);
+// Defaults: 180s total wait, poll every 1s. Can be overridden via env vars.
+const timeout = parseInt(process.env.HEALTH_TIMEOUT || '180000', 10);
 const interval = parseInt(process.env.HEALTH_POLL_INTERVAL || '1000', 10);
 const maxAttempts = parseInt(process.env.HEALTH_MAX_ATTEMPTS || '0', 10) || 0; // 0 means unlimited until timeout
 

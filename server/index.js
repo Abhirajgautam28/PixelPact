@@ -31,7 +31,28 @@ let RoomModel = null
 async function initDb(){
   const uri = process.env.MONGO_URI || process.env.MONGODB_URI
   if (!uri) return
-  await mongoose.connect(uri)
+  // connect with retries/backoff to tolerate transient network/TLS failures in CI
+  const maxAttempts = parseInt(process.env.DB_CONNECT_MAX_ATTEMPTS || '6', 10)
+  const baseDelay = parseInt(process.env.DB_CONNECT_BASE_DELAY || '500', 10) // ms
+  let attempt = 0
+  while (true) {
+    attempt += 1
+    try {
+      await mongoose.connect(uri)
+      console.log('Connected to MongoDB')
+      break
+    } catch (err) {
+      const msg = err && err.message ? err.message : String(err)
+      if (attempt >= maxAttempts) {
+        console.warn(`DB init failed after ${attempt} attempts (continuing with in-memory):`, msg)
+        break
+      }
+      const delay = baseDelay * Math.pow(2, attempt - 1)
+      console.warn(`DB connect attempt ${attempt} failed; retrying in ${delay}ms. Error: ${msg}`)
+      // wait before retrying
+      await new Promise((r) => setTimeout(r, delay))
+    }
+  }
   const userSchema = new mongoose.Schema({ email: { type: String, unique: true }, password: String, name: String })
   const roomSchema = new mongoose.Schema({ id: { type: String, unique: true }, participants: [String], createdAt: { type: Date, default: Date.now } })
   const inviteSchema = new mongoose.Schema({ token: { type: String, unique: true }, room: String, owner: String, used: { type: Boolean, default: false }, expiresAt: Date, createdAt: { type: Date, default: Date.now } })

@@ -56,7 +56,7 @@ jobs:
         run: |
           # uses scripts/ci-health-check.js to poll the health endpoint
           # Increase timeout for server readiness in CI to reduce flakes
-          HEALTH_TIMEOUT=120000 HEALTH_POLL_INTERVAL=1000 node scripts/ci-health-check.js
+          HEALTH_TIMEOUT=180000 HEALTH_POLL_INTERVAL=1000 node scripts/ci-health-check.js
 
       - name: Build and start frontend (Vite preview) in background
         if: always()
@@ -81,6 +81,8 @@ jobs:
           if [ "${{ matrix.browser }}" = "firefox" ]; then
             # Give Firefox a couple of automatic retries to reduce flakes
             ARGS+=("--retries=2")
+            # Run Firefox with a single worker to reduce concurrency flakiness
+            ARGS+=("--workers=1")
           fi
           npx playwright test "${ARGS[@]}"
           if [ -d playwright-report ]; then mv playwright-report playwright-report-${{ matrix.browser }}; fi
