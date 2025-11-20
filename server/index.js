@@ -49,6 +49,9 @@ const ROOMS = new Map()
 // in-memory invite tokens (single-use tokens stored here).
 // Format: INVITES.set(token, { room, owner, used: false, expiresAt: timestamp })
 const INVITES = new Map()
+// cache of invites created in this process to reduce DB/memory races.
+// Entries are short-lived and pruned periodically. Structure: CREATED_INVITES.set(token, { room, owner, used: false, expiresAt, createdAt })
+const CREATED_INVITES = new Map()
 // in-memory presence: roomId -> Set(socketId)
 const PRESENCE = new Map()
 
@@ -474,6 +477,19 @@ function cleanupRateLimitMap(){
 
 // Periodic cleanup to avoid memory leaks
 setInterval(cleanupRateLimitMap, LOG_RATE_LIMIT_WINDOW_MS * 5)
+// Periodic cleanup for invite caches to avoid memory growth
+function cleanupInviteCaches(){
+  const now = Date.now()
+  // remove created invites older than 1 hour
+  for (const [t, info] of CREATED_INVITES.entries()){
+    if (info && info.createdAt && (now - info.createdAt) > (60 * 60 * 1000)) CREATED_INVITES.delete(t)
+  }
+  // remove expired invites from INVITES map
+  for (const [t, info] of INVITES.entries()){
+    if (info && info.expiresAt && now > info.expiresAt) INVITES.delete(t)
+  }
+}
+setInterval(cleanupInviteCaches, 10 * 60 * 1000)
 
 app.post('/api/logs', (req, res) => {
   try{
@@ -533,6 +549,8 @@ app.post('/api/rooms/:id/invite', async (req, res)=>{
     const tokenBytes = crypto.randomBytes(20).toString('hex')
     const ttl = (req.body && req.body.ttl) ? parseInt(req.body.ttl,10) : (60 * 60 * 1000) // default 1 hour in ms
     const expiresAt = Date.now() + (isNaN(ttl) ? 60 * 60 * 1000 : ttl)
+    // record in-process so that brief DB/memory races still allow a consistent outcome
+    CREATED_INVITES.set(tokenBytes, { room: id, owner, used: false, expiresAt, createdAt: Date.now() })
     // persist in MongoDB when available
     const InviteModel = mongoose.models.Invite
     if (InviteModel) {
@@ -540,6 +558,7 @@ app.post('/api/rooms/:id/invite', async (req, res)=>{
         const doc = await InviteModel.create({ token: tokenBytes, room: id, owner, used: false, expiresAt: new Date(expiresAt) })
         // also mirror in-memory for fast access
         INVITES.set(tokenBytes, { room: id, owner, used: false, expiresAt })
+        // keep created cache until consumed/cleanup
         const url = `${process.env.FRONTEND_ORIGIN || `${req.protocol}://${req.get('host')}`}/board/${id}?invite=${tokenBytes}`
         return res.json({ invite: tokenBytes, url, expiresAt })
       }catch(err){ console.warn('persist invite failed', err) }
@@ -565,6 +584,7 @@ app.post('/api/rooms/share/:token/revoke', (req, res) => {
     const InviteModel = mongoose.models.Invite
     if (InviteModel){ try{ InviteModel.deleteOne({ token }).catch(()=>{}) }catch(e){} }
     INVITES.delete(token)
+    CREATED_INVITES.delete(token)
     return res.json({ ok: true })
   }catch(err){ console.error('revoke invite failed', err); return res.status(500).json({ message: 'error' }) }
 })
@@ -581,8 +601,9 @@ app.post('/api/rooms/join-invite', async (req, res) => {
       let doc = await InviteModel.findOne({ token })
       // If DB is missing the document for any reason, try the in-memory fallback
       if (!doc) {
-        const info = INVITES.get(token)
         const suffix = token && token.slice ? token.slice(-6) : '??????'
+        // First try the faster in-memory map (if invite was mirrored there)
+        const info = INVITES.get(token)
         if (info) {
           console.warn(`[invite] db-missing token-*${suffix} — falling back to memory (used=${!!info.used})`)
           if (info.used) return res.status(410).json({ message: 'used' })
@@ -591,12 +612,31 @@ app.post('/api/rooms/join-invite', async (req, res) => {
           info.used = true
           INVITES.set(token, info)
           INVITES.delete(token)
+          CREATED_INVITES.delete(token)
           const tempJwt = jwt.sign({ room: info.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
           setAuthCookie(res, tempJwt)
           setCsrfCookie(res)
           console.log(`[invite] token consumed from memory token-*${suffix}`)
           return res.json({ ok: true, roomId: info.room })
         }
+
+        // If not in INVITES, check the local-created cache in case DB and INVITES raced.
+        const created = CREATED_INVITES.get(token)
+        if (created) {
+          console.warn(`[invite] db-missing token-*${suffix} — falling back to created-cache (used=${!!created.used})`)
+          if (created.used) return res.status(410).json({ message: 'used' })
+          if (created.expiresAt && Date.now() > created.expiresAt) { CREATED_INVITES.delete(token); return res.status(410).json({ message: 'expired' }) }
+          // consume it
+          created.used = true
+          CREATED_INVITES.set(token, created)
+          CREATED_INVITES.delete(token)
+          const tempJwt = jwt.sign({ room: created.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
+          setAuthCookie(res, tempJwt)
+          setCsrfCookie(res)
+          console.log(`[invite] token consumed from created-cache token-*${suffix}`)
+          return res.json({ ok: true, roomId: created.room })
+        }
+
         console.warn(`[invite] token not found in db or memory token-*${suffix}`)
         return res.status(404).json({ message: 'invalid' })
       }
@@ -608,15 +648,29 @@ app.post('/api/rooms/join-invite', async (req, res) => {
       try{ await InviteModel.updateOne({ token }, { $set: { used: true } }) }catch(e){ console.warn('[invite] failed to mark db token used', e && e.message) }
       // also remove from in-memory map if present
       INVITES.delete(token)
+      CREATED_INVITES.delete(token)
       const tempJwt = jwt.sign({ room: doc.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
       setAuthCookie(res, tempJwt)
       setCsrfCookie(res)
       console.log(`[invite] db token-*${suffix} consumed`)
       return res.json({ ok: true, roomId: doc.room })
     }
-    // fallback to in-memory
+    // fallback to in-memory (or recently created cache)
     const info = INVITES.get(token)
-    if (!info) return res.status(404).json({ message: 'invalid' })
+    if (!info){
+      const created = CREATED_INVITES.get(token)
+      if (!created) return res.status(404).json({ message: 'invalid' })
+      if (created.used) return res.status(410).json({ message: 'used' })
+      if (created.expiresAt && Date.now() > created.expiresAt) { CREATED_INVITES.delete(token); return res.status(410).json({ message: 'expired' }) }
+      // consume created-cache
+      created.used = true
+      CREATED_INVITES.set(token, created)
+      CREATED_INVITES.delete(token)
+      const tempJwt = jwt.sign({ room: created.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
+      setAuthCookie(res, tempJwt)
+      setCsrfCookie(res)
+      return res.json({ ok: true, roomId: created.room })
+    }
     if (info.used) return res.status(410).json({ message: 'used' })
     if (info.expiresAt && Date.now() > info.expiresAt) { INVITES.delete(token); return res.status(410).json({ message: 'expired' }) }
     // mark used and remove to enforce single-use
