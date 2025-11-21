@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useToast } from '../components/ToastContext'
 import { io } from 'socket.io-client'
+import { useNavigate } from 'react-router-dom'
 
 export default function Whiteboard(){
+  const navigate = useNavigate()
   // helper to enforce deterministic drawing settings across browsers
   function applyCtxDefaults(ctx){
     try{
@@ -56,9 +58,20 @@ export default function Whiteboard(){
         // if an invite token is present in the URL, exchange it for a short-lived session cookie
         const params = new URLSearchParams(window.location.search)
         const invite = params.get('invite')
+
+        // Check if user is logged in, if not and invite is present, ask for name
+        let guestName = null
+        if (invite) {
+            const meRes = await fetch('/api/auth/me')
+            const me = await meRes.json()
+            if (!me || !me.user) {
+                guestName = prompt('Please enter your name to join as a guest:') || 'Guest'
+            }
+        }
+
         if (invite){
           try{
-            const resp = await fetch('/api/rooms/join-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invite }) })
+            const resp = await fetch('/api/rooms/join-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invite, name: guestName }) })
             if (resp.ok){
               const body = await resp.json()
               toast.show('Joined room via invite', { type: 'success' })
@@ -86,6 +99,13 @@ export default function Whiteboard(){
       s.on('presence', (list)=> setPresence(list))
       s.on('peer-joined', (p)=> setPresence(prev => Array.from(new Set([...prev, p.id]))))
       s.on('peer-left', (p)=> setPresence(prev => prev.filter(x=> x !== p.id)))
+
+      // Listen for session end
+      s.on('room-ended', (data) => {
+        toast.show(data.message || 'Session ended', { type: 'info' })
+        s.disconnect()
+        navigate('/')
+      })
 
       s.on('draw', (data)=>{
       const c = canvasRef.current
@@ -645,22 +665,34 @@ export default function Whiteboard(){
   }
 
   async function createInvite(){
-    // call server to create invite for a dummy room
+    // In the new flow, we are likely already in a room. If not, create one.
+    // But for sharing the CURRENT room:
     try{
-      const resp = await fetch('/api/rooms', { method: 'POST' })
-      const { roomId } = await resp.json()
-      const inv = await fetch(`/api/rooms/${roomId}/invite`, { method: 'POST' })
+      const parts = window.location.pathname.split('/')
+      const currentRoomId = parts[parts.length-1]
+
+      // If we are in 'new' or invalid, creating a room is handled by backend on first save/load?
+      // Assuming we are in a valid room ID:
+      const inv = await fetch(`/api/rooms/${currentRoomId}/invite`, { method: 'POST' })
+      if (!inv.ok) throw new Error('Failed to create invite')
       const body = await inv.json()
       setInviteLink(body.url)
       setInviteOpen(true)
       if (body && body.expiresAt) setInviteExpiry(body.expiresAt)
       if (body && body.invite) setInviteToken(body.invite)
-      // show explicit toast that this invite is single-use and when it expires
       try{
         const expiry = body && body.expiresAt ? (new Date(Number(body.expiresAt)).toLocaleString()) : 'unknown'
         toast.show(`Invite sent — single-use. Expires: ${expiry}`, { type: 'info' })
       }catch(e){ /* swallow */ }
-  }catch(err){ toast.show('Invite failed', { type: 'error' }) }
+    }catch(err){ toast.show('Invite failed', { type: 'error' }) }
+  }
+
+  function endSession() {
+      if (confirm('Are you sure you want to end the session? This will remove all participants and delete the board.')) {
+          if (socket) socket.disconnect() // The server handle disconnect will destroy the room if we are owner
+          navigate('/')
+          toast.show('Session ended', { type: 'success' })
+      }
   }
 
   async function clearBoard(){
@@ -721,6 +753,7 @@ export default function Whiteboard(){
           {selectionRect.current && <button onClick={deleteSelection} className="px-3 py-1 bg-amber-100 rounded">Delete Selection</button>}
           <button onClick={()=> setCurrentLayer(l => l === 'default' ? 'annotations' : 'default')} className="px-3 py-1 bg-slate-100 rounded">Toggle Layer</button>
           <button onClick={createInvite} className="px-3 py-1 bg-indigo-600 text-white rounded">Invite</button>
+          <button onClick={endSession} className="px-3 py-1 bg-red-600 text-white rounded">End Session</button>
         </div>
       </div>
 

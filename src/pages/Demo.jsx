@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 function Canvas({ className }){
   const canvasRef = useRef(null)
@@ -262,7 +263,10 @@ export default function Demo(){
           <h2 className="text-2xl font-semibold">Interactive Demo</h2>
           <p className="mt-2 text-slate-700 max-w-2xl">A lightweight in-browser canvas demonstrating drawing tools, shapes, undo, replay and export. Works with mouse or touch.</p>
         </div>
-        <div className="text-sm text-slate-500">Interactive • Animated • Exportable</div>
+        <div className="flex flex-col items-end gap-2">
+          <div className="text-sm text-slate-500">Interactive • Animated • Exportable</div>
+          <Link to="/register" className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors">Sign Up to Save & Share</Link>
+        </div>
       </div>
 
       <div className="mt-2">
