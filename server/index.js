@@ -54,7 +54,7 @@ async function initDb(){
     }
   }
   const userSchema = new mongoose.Schema({ email: { type: String, unique: true }, password: String, name: String })
-  const roomSchema = new mongoose.Schema({ id: { type: String, unique: true }, participants: [String], createdAt: { type: Date, default: Date.now } })
+  const roomSchema = new mongoose.Schema({ id: { type: String, unique: true }, participants: [String], owner: String, createdAt: { type: Date, default: Date.now } })
   const inviteSchema = new mongoose.Schema({ token: { type: String, unique: true }, room: String, owner: String, used: { type: Boolean, default: false }, expiresAt: Date, createdAt: { type: Date, default: Date.now } })
   UserModel = mongoose.models.User || mongoose.model('User', userSchema)
   RoomModel = mongoose.models.Room || mongoose.model('Room', roomSchema)
@@ -162,7 +162,7 @@ app.post('/api/auth/register', async (req, res) => {
   setAuthCookie(res, token)
   setCsrfCookie(res)
       const roomId = makeRoomId()
-      await RoomModel.create({ id: roomId, participants: [email] })
+      await RoomModel.create({ id: roomId, participants: [email], owner: email })
       return res.json({ roomId })
     } else {
       if (USERS.has(email)) return res.status(409).json({ message: 'exists' })
@@ -171,7 +171,7 @@ app.post('/api/auth/register', async (req, res) => {
   setAuthCookie(res, token)
   setCsrfCookie(res)
       const roomId = makeRoomId()
-      ROOMS.set(roomId, { id: roomId, participants: [email] })
+      ROOMS.set(roomId, { id: roomId, participants: [email], owner: email })
       return res.json({ roomId })
     }
   }catch(err){
@@ -215,14 +215,21 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/rooms', async (req, res) => {
   // extract token from cookie/header if present
   const token = extractToken(req)
+  let owner = null
+  if (token) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET)
+      owner = payload.email || payload.id
+    } catch(e) {}
+  }
   // in production verify token; here we accept and create
   const roomId = makeRoomId()
   try{
     const template = req.body && req.body.template ? req.body.template : null
     if (RoomModel) {
-      await RoomModel.create({ id: roomId, participants: [], template })
+      await RoomModel.create({ id: roomId, participants: [], template, owner })
     } else {
-      ROOMS.set(roomId, { id: roomId, participants: [], template })
+      ROOMS.set(roomId, { id: roomId, participants: [], template, owner })
     }
     res.json({ roomId })
   }catch(err){ console.error(err); res.status(500).json({ message: 'error' }) }
@@ -648,7 +655,8 @@ app.post('/api/rooms/join-invite', async (req, res) => {
           USED_INVITES.set(token, Date.now())
           setTimeout(()=>{ INVITES.delete(token) }, 5 * 60 * 1000)
           CREATED_INVITES.delete(token)
-          const tempJwt = jwt.sign({ room: info.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
+          const guestName = (req.body && req.body.name) || 'Guest'
+          const tempJwt = jwt.sign({ room: info.room, role: 'guest', name: guestName }, JWT_SECRET, { expiresIn: '1h' })
           setAuthCookie(res, tempJwt)
           setCsrfCookie(res)
           console.log(`[invite] token consumed from memory token-*${suffix}`)
@@ -669,7 +677,8 @@ app.post('/api/rooms/join-invite', async (req, res) => {
           CREATED_INVITES.set(token, created)
           USED_INVITES.set(token, Date.now())
           setTimeout(()=>{ CREATED_INVITES.delete(token) }, 5 * 60 * 1000)
-          const tempJwt = jwt.sign({ room: created.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
+          const guestName = (req.body && req.body.name) || 'Guest'
+          const tempJwt = jwt.sign({ room: created.room, role: 'guest', name: guestName }, JWT_SECRET, { expiresIn: '1h' })
           setAuthCookie(res, tempJwt)
           setCsrfCookie(res)
           console.log(`[invite] token consumed from created-cache token-*${suffix}`)
@@ -693,7 +702,8 @@ app.post('/api/rooms/join-invite', async (req, res) => {
       CREATED_INVITES.delete(token)
       // schedule cleanup of used cache after a short time
       setTimeout(()=>{ USED_INVITES.delete(token) }, 5 * 60 * 1000)
-      const tempJwt = jwt.sign({ room: doc.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
+      const guestName = (req.body && req.body.name) || 'Guest'
+      const tempJwt = jwt.sign({ room: doc.room, role: 'guest', name: guestName }, JWT_SECRET, { expiresIn: '1h' })
       setAuthCookie(res, tempJwt)
       setCsrfCookie(res)
       console.log(`[invite] db token-*${suffix} consumed`)
@@ -718,7 +728,8 @@ app.post('/api/rooms/join-invite', async (req, res) => {
       CREATED_INVITES.set(token, created)
       USED_INVITES.set(token, Date.now())
       setTimeout(()=>{ CREATED_INVITES.delete(token) }, 5 * 60 * 1000)
-      const tempJwt = jwt.sign({ room: created.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
+      const guestName = (req.body && req.body.name) || 'Guest'
+      const tempJwt = jwt.sign({ room: created.room, role: 'guest', name: guestName }, JWT_SECRET, { expiresIn: '1h' })
       setAuthCookie(res, tempJwt)
       setCsrfCookie(res)
       return res.json({ ok: true, roomId: created.room })
@@ -734,7 +745,8 @@ app.post('/api/rooms/join-invite', async (req, res) => {
     USED_INVITES.set(token, Date.now())
     setTimeout(()=>{ INVITES.delete(token) }, 5 * 60 * 1000)
     // create a short-lived session JWT for this guest so socket.io can accept it
-    const tempJwt = jwt.sign({ room: info.room, role: 'guest' }, JWT_SECRET, { expiresIn: '1h' })
+    const guestName = (req.body && req.body.name) || 'Guest'
+    const tempJwt = jwt.sign({ room: info.room, role: 'guest', name: guestName }, JWT_SECRET, { expiresIn: '1h' })
     // set auth cookie so browser clients will present it on socket handshake
     setAuthCookie(res, tempJwt)
     setCsrfCookie(res)
@@ -769,7 +781,7 @@ io.on('connection', (socket) => {
       }
     }catch(e){ console.warn('removeFromAllPresence failed', e) }
   }
-  socket.on('join', (roomId) => {
+  socket.on('join', async (roomId) => {
     // Verify token from handshake cookies (double as socket auth)
     try{
       // allow three authentication paths for joining sockets:
@@ -805,13 +817,33 @@ io.on('connection', (socket) => {
         socket.emit('join-error', { message: 'unauthorized' })
         return
       }
+      let payload = null
       try{
-        jwt.verify(token, JWT_SECRET)
+        payload = jwt.verify(token, JWT_SECRET)
       }catch(e){ socket.emit('join-error', { message: 'invalid_token' }); return }
       socket.join(roomId)
+
+      // Check ownership
+      let isOwner = false
+      try {
+        if (RoomModel) {
+          const r = await RoomModel.findOne({ id: roomId })
+          if (r && r.owner && (r.owner === payload.email || r.owner === payload.id)) isOwner = true
+        } else {
+          const r = ROOMS.get(roomId)
+          if (r && r.owner && (r.owner === payload.email || r.owner === payload.id)) isOwner = true
+        }
+      } catch(e) { console.warn('owner check failed', e) }
+
+      if (isOwner) {
+        socket.data.ownerOf = roomId
+        console.log(`[socket] owner joined room ${roomId}`)
+      }
+
       // update presence map and emit snapshot
       addToPresence(roomId)
-      socket.to(roomId).emit('peer-joined', { id: socket.id })
+      const name = payload.name || payload.email || 'Unknown'
+      socket.to(roomId).emit('peer-joined', { id: socket.id, name })
     }catch(err){
       console.warn('join verify failed', err)
       socket.emit('join-error', { message: 'error' })
@@ -827,7 +859,22 @@ io.on('connection', (socket) => {
     if (room) socket.to(room).emit('clear', { room })
     else socket.broadcast.emit('clear', {})
   })
-  socket.on('disconnect', ()=>{ console.log('socket disconnected', socket.id); try{ removeFromAllPresence() }catch(e){} })
+  socket.on('disconnect', async ()=>{
+    console.log('socket disconnected', socket.id);
+    try{ removeFromAllPresence() }catch(e){}
+    // Handle owner disconnect: destroy room
+    if (socket.data && socket.data.ownerOf) {
+      const rId = socket.data.ownerOf
+      console.log(`[socket] owner left room ${rId} — destroying session`)
+      io.to(rId).emit('room-ended', { message: 'Host ended the session' })
+      // Clean up
+      if (RoomModel) {
+        try { await RoomModel.deleteOne({ id: rId }) } catch(e) { console.error('failed to delete room', e) }
+      }
+      ROOMS.delete(rId)
+      PRESENCE.delete(rId)
+    }
+  })
 })
 
 const PORT = process.env.PORT || 3001
