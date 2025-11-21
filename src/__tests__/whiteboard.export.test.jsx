@@ -2,6 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { vi, beforeAll, afterAll, test, expect } from 'vitest'
 import Whiteboard from '../pages/Whiteboard'
+import { BrowserRouter } from 'react-router-dom'
 
 beforeAll(()=>{
   // Provide minimal canvas getContext implementation used by Whiteboard
@@ -23,7 +24,11 @@ afterAll(()=>{
 
 test('export PNG and high-res produce downloadable data URLs', async ()=>{
   const appendSpy = vi.spyOn(document.body, 'appendChild')
-  render(<Whiteboard />)
+  render(
+    <BrowserRouter>
+      <Whiteboard />
+    </BrowserRouter>
+  )
 
   // find Export button and the hidden dropdown buttons by text
   const pngBtn = screen.getByText('PNG', { selector: 'button' })
