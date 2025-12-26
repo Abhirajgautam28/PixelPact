@@ -125,7 +125,7 @@ jobs:
 
       - name: Upload packaged Playwright outputs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: packaged-playwright-outputs-${{ matrix.browser }}
           path: |
@@ -134,21 +134,21 @@ jobs:
 
       - name: Upload Playwright HTML report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report-${{ matrix.browser }}
           path: playwright-report-${{ matrix.browser }}
 
       - name: Upload test-results (traces/screenshots)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-${{ matrix.browser }}
           path: test-results-${{ matrix.browser }}
 
       - name: Upload server log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: server-log-${{ matrix.browser }}
           path: server-${{ matrix.browser }}.log
@@ -161,7 +161,7 @@ jobs:
 
       - name: Upload CI invite audit
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: invite-audit-${{ matrix.browser }}
           path: invite-audit-${{ matrix.browser }}.txt
@@ -219,21 +219,21 @@ jobs:
 
       - name: Upload nightly HTML report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report-nightly
           path: playwright-report-nightly
 
       - name: Upload nightly test-results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-nightly
           path: test-results-nightly
 
       - name: Upload nightly server log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: server-log-nightly
           path: server-nightly.log

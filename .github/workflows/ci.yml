@@ -41,13 +41,13 @@ jobs:
         run: node scripts/run-playwright-retry.mjs
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report
           path: playwright-report
       - name: Upload logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ci-logs
           path: |

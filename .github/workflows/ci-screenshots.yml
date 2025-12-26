@@ -45,7 +45,7 @@ jobs:
         run: npx playwright test playwright/tests/hero.screenshot.spec.ts --project=chromium --reporter=list
 
       - name: Upload hero screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: hero-screenshots
           path: test-results/hero-screenshots/**
