@@ -65,7 +65,7 @@
 		"@svgr/cli": "^6.5.0",
 		"@testing-library/jest-dom": "6.9.1",
 		"@testing-library/react": "14.0.0",
-		"@typescript-eslint/eslint-plugin": "^8.46.4",
+		"@typescript-eslint/eslint-plugin": "^8.50.1",
 		"@typescript-eslint/parser": "^8.46.4",
 		"@vitejs/plugin-react": "5.0.0",
 		"autoprefixer": "10.4.14",
