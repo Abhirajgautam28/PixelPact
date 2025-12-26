@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           # Vite requires Node 20.19+ (or 22.12+). Use Node 20.x LTS to satisfy build and crypto APIs.
           node-version: '20.19.0'
